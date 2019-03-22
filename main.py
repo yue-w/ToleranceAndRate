@@ -50,7 +50,7 @@ for ri in r:
     ri_minus_epsilon = r
     ri_add_epsilon[i] +=  epsilon
     ri_add_epsilon[i] -=  epsilon
-    dec_estmate = hp.U(C,USp,sigma,sigmaY,k) - 
+    dec_estmate = hp.U(C,USp,sigma,sigmaY,k) 
     
     
     
