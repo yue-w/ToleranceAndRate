@@ -14,6 +14,7 @@ import numpy as np
 import helpers as hp
 #from scipy.stats import norm 
 import commonfunc as cf
+
 #number of components
 m = 3
 

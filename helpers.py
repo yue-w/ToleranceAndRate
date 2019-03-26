@@ -9,23 +9,32 @@ This file define helper functions that will be called by main.py
 import numpy as np
 from scipy.special import erf
 import math
+from scipy.special import factorial
 
+#n is the order of polimonial function to approximate the error function and its derivative
+n = 25
 #The design function of clutch
 def Y(x1,x2,x3):
     return math.acos((x1+x2)/(x3-x2))
 
 #SigmaY 
-def sigmaY(sigma,D):
-    VY = np.sum(np.multiply(np.power(D,2),np.power(sigma,2)))
+def sigmaY(sigmaX,D):
+    VY = np.sum(np.multiply(np.power(D,2),np.power(sigmaX,2)))
     return np.sqrt(VY)
 
 #Objective function: Unit cost of a product
-def U_scrap(C,USY,miuY,sigmaY,k):
+def U_scrap(C,USY,miuY,sigmaYp,k):
  #The parameters are arrays.   
     USp = USY - miuY
     sqrt2 = np.sqrt(2)
-    return np.sum(np.divide(C,erf(k/sqrt2)))/erf(USp/sqrt2/sigmaY)
-    
+    return np.sum(np.divide(C,erf(k/sqrt2)))/erf(USp/sqrt2/sigmaYp)
+
+#Objective function: Unit cost of a product
+def U_noscrap(C,USY,miuY,sigmaY):
+ #The parameters are arrays.   
+    USp = USY - miuY
+    sqrt2 = np.sqrt(2)
+    return np.sum(C)/erf(USp/sqrt2/sigmaY)    
     
 #Cost-Rate function. The ith component is the ith component in the returned array
 def C(A,B,r):
@@ -38,8 +47,16 @@ def sigma(E,F,r):
 
 #Approximat the deriative of an error function. The error function is approximated
 #by a 7th order power series expansion for the error function
-def derf_dx(x):
-    return (1.0-x**2+x**4/2.0-x**6/6.0)*2.0/math.sqrt(math.pi)
+def derf_dx(x,n):
+    #return (1.0-x**2+x**4/2.0-x**6/6.0)*2.0/math.sqrt(math.pi)
+    val = 0
+    token = 1
+    for i in range(0,n):
+        val += token * np.power(x,2*i) / factorial(i)
+        token *= -1 
+    val = val * 2 / np.sqrt(np.pi)
+    return val
+        
     
 #The derivative of X1 to the clutch design function: dy/dx1. (Also noted as D1)
 def dy_dx1(x1,x2,x3):
@@ -67,31 +84,33 @@ def dsigmaY_dri(D,sigma,r,i,dsigma_dr):
     return np.power(sum,-0.5)*(D[i]**2)*sigma[i]*dsigma_dr
 
 #dU_dri No scrap
-def dU_dri_noscrap(USY, miuY,sigmaY,dsigmaY_dri,C,k,dCi_dri,i):
+def dU_dri_noscrap(USY, miuY,sigmaY,C,k,i,dsigmaY_dri,dCi_dri):
     USp=USY - miuY
     tem1 = USp/(np.sqrt(2)*sigmaY)
     tem2 = tem1/sigmaY
-    tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1)*tem2*dsigmaY_dri
-    tem4 = np.sum(np.divide(C,erf(k/np.sqrt(2))))
-    tem5 = dCi_dri/(erf(tem1)*erf(k[i]/np.sqrt(2)))
+    tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1,n)*tem2*dsigmaY_dri
+    tem4 = np.sum(C)
+    tem5 = dCi_dri/erf(tem1)
     return tem3*tem4 + tem5
 
 #dU_dri Scrap
 def dU_dri_scrap(USY, miuY,sigmaYp,C,k,i,lamada,dsigmaY_dri,dCi_dri):
     USp = USY - miuY
-    tem1 = USp/(np.sqrt(2)*sigmaYp)
+    sqrt2 = np.sqrt(2)
+    tem1 = USp/(sqrt2*sigmaYp)
     tem2 = tem1/sigmaYp
-    tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1)*tem2*dsigmaY_dri*lamada
-    tem4 = np.sum(np.divide(C,erf(k/np.sqrt(2))))
-    tem5 = dCi_dri/(erf(tem1)*erf(k[i]/np.sqrt(2)))
+    tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1,n)*tem2*dsigmaY_dri*lamada
+    tem4 = np.sum(np.divide(C,erf(k/sqrt2)))
+    tem5 = dCi_dri/(erf(tem1)*erf(k[i]/sqrt2))
     return tem3*tem4 + tem5
 
 #dU_dki
 def dU_dki_scrap(USY, miuY,sigmaYp,ki,Ci):
     USp = USY - miuY
     sqrt2 = np.sqrt(2)
-    tem1 = USp/(np.sqrt(2)*sigmaYp)
-    return -Ci/sqrt2*derf_dx(ki/sqrt2)/erf(tem1)/(erf(ki/sqrt2)**2)
+    tem1 = USp/(sqrt2*sigmaYp)
+    tem2 = ki/sqrt2
+    return -Ci/sqrt2*derf_dx(tem2,n)/erf(tem1)/np.power(erf(tem2),2)
     
 #Define some helper functions
 def produce_satisfactory_output(miu, sigma, Q, TOL):

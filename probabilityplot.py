@@ -49,8 +49,8 @@ Y2 = np.arccos((dim_X1+dim_X2)/(dim_X3-dim_X2))
 Y_removeNAN = Y[np.logical_not(np.isnan(Y))]
 plot(Y,Y_removeNAN, 'no scrap',p)
 #save file to csv
-hp.save_data_csv('Y.csv',Y)
-hp.save_data_csv('Y_removeNAN.csv',Y_removeNAN)
+#hp.save_data_csv('Y.csv',Y)
+#hp.save_data_csv('Y_removeNAN.csv',Y_removeNAN)
 
 (dim_X1_satis,N1) = hp.produce_satisfactory_output(miuX1, sigmax1, nsample, TX1)
 (dim_X2_satis,N2) = hp.produce_satisfactory_output(miuX2, sigmax2, nsample, TX2)
@@ -59,6 +59,6 @@ dim_X_satis = np.array([dim_X1_satis,dim_X2_satis,dim_X3_satis])
 Y_trumcate = hp.assembly(dim_X_satis)
 Y_truncate_removeNAN = Y_trumcate[np.logical_not(np.isnan(Y_trumcate))]
 #save file to csv
-hp.save_data_csv('Y_trumcate.csv',Y_trumcate)
-hp.save_data_csv('Y_truncate_removeNAN.csv',Y_truncate_removeNAN)
+#hp.save_data_csv('Y_trumcate.csv',Y_trumcate)
+#hp.save_data_csv('Y_truncate_removeNAN.csv',Y_truncate_removeNAN)
 plot(Y_trumcate,Y_truncate_removeNAN, 'with scrap',p)
