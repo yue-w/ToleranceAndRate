@@ -19,6 +19,7 @@ m = 3
 epsilon = 1e-7
 
 #Nominal value of Y
+
 miuY = np.radians(7.0124)
 
 miu= np.array([55.291, 22.86, 101.6])

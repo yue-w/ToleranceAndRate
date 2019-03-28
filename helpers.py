@@ -19,6 +19,7 @@ def Y(x1,x2,x3):
 
 #SigmaY 
 def sigmaY(sigmaX,D):
+    
     VY = np.sum(np.multiply(np.power(D,2),np.power(sigmaX,2)))
     return np.sqrt(VY)
 
@@ -144,11 +145,8 @@ def assembly(X):
 def save_data_csv(filename,data):
     np.savetxt(filename, data, delimiter=' ')
 
-def test(str):
-    print(str,test2())
-    
-def test2():
-    return 'test2'
+
+
 
 
 
