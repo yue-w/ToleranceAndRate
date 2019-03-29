@@ -128,12 +128,13 @@ length1_r = distance.euclidean(grad_equation_r,np.zeros_like(grad_equation_r))
 length2_r = distance.euclidean(grad_numerical_r,np.zeros_like(grad_numerical_r))
 graderror_r = distance12_r/(length1_r + length2_r)
 print('error of dr=',graderror_r)
-            
-distance12_k =  distance.euclidean(grad_equation_k,grad_numerical_k)
-length1_k = distance.euclidean(grad_equation_k,np.zeros_like(grad_equation_k))
-length2_k = distance.euclidean(grad_numerical_k,np.zeros_like(grad_numerical_k))
-graderror_k = distance12_k/(length1_k + length2_k)
-print('error of dk=',graderror_k)    
+
+if scrap == 1: #No scrap            
+    distance12_k =  distance.euclidean(grad_equation_k,grad_numerical_k)
+    length1_k = distance.euclidean(grad_equation_k,np.zeros_like(grad_equation_k))
+    length2_k = distance.euclidean(grad_numerical_k,np.zeros_like(grad_numerical_k))
+    graderror_k = distance12_k/(length1_k + length2_k)
+    print('error of dk=',graderror_k)    
     
     
     
