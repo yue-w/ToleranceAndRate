@@ -35,9 +35,9 @@ miuX1 = 55.291
 miuX2 = 22.86
 miuX3 = 101.6
 ##Tolerance from Choi
-#CASE = 1
+CASE = 1
 ##Tolerance from Zahara
-CASE = 2
+#CASE = 2
 (sigmax1,sigmax2, sigmax3,TX1,TX2,TX3) = cf.init_sigmas(CASE,p)
     
 dim_X1 = np.random.normal(loc=miuX1,scale=sigmax1,size=nsample)

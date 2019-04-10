@@ -54,7 +54,7 @@ sigmaY_Taylor = hp.sigmaY(sigmaX,D)
 #Nominal value of Y
 miuY = np.radians(7.0124)
 ##Upper specification limit
-USY = miuY + np.radians(1.0)
+USY = miuY + np.radians(2.0)
 
 
 #U = hp.U_scrap(C,USY,sigmaY,k)

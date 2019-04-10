@@ -3,7 +3,7 @@
 Created on Sat Mar 16 10:48:35 2019
 
 @author: wyue
-Optimizing production rate. Clutch case Study
+Optimizing production rate. Clutch scenario Study
 """
 
 #import packages
@@ -19,36 +19,45 @@ m = 3
 
 epsilon = 1e-7
 
-smallvalue = 1e-2 # Lover bound is 0, to prevent dividing by zero, set lower bond to a small value
-largevalue= 15
+smallvalue = 1e-2 # Lower bound is 0, to prevent dividing by zero, set lower bond to a small value
+largevalue= 100
 
-#Nominal value of Y
-miuY = np.radians(7.0124)
+
 miu= np.array([55.291, 22.86, 101.6])
 
-r = np.array([2.0, 3.0, 2.0])
+r = np.array([10.0, 10.0, 10.0])
 
 
 lamada = 0.87794
    
 SCRAP = 1
 NOSCRAP = 2
-case =  NOSCRAP
+scenario =  NOSCRAP
 
-p = 0.95
+p = 0.997
+##Tolerance from Choi
+CASE = 1
+##Tolerance from Zahara
+#CASE = 2
 
 
 
-(sigmaX_init1,sigmaX_init2, sigmaX_init3,TX1,TX2,TX3) = cf.init_sigmas(case,p)
+(sigmaX_init1,sigmaX_init2, sigmaX_init3,TX1,TX2,TX3) = cf.init_sigmas(CASE,p)
+
 
 sigmaX_init = np.array([sigmaX_init1, sigmaX_init2, sigmaX_init3])
+
+#Estimate cost
+costEst = cf.cost(sigmaX_init)
+
 TX = np.array([TX1,TX2,TX3])
 k = np.divide(TX,sigmaX_init)
 
-A = np.array([1.0, 2.0, 3.0])
-B = np.array([1.0, 2.0, 3.0])
-E = np.array([sigmaX_init1-1, sigmaX_init2-1, sigmaX_init3-1])
-F = np.array([0.1, 1.0, 0.5])
+A = np.array([5.0, 3.0, 1.0])
+B = np.array([20.0, 36.7, 36.0])
+F = np.array([0.001798/3, 0.001653/3, 0.002/3])
+#E =  sigmaX_init - np.multiply(F,np.power(r,2)) #np.array([sigmaX_init1-1, sigmaX_init2-1, sigmaX_init3-1])
+E = np.array([0,0,0])
 
 D1 = hp.dy_dx1(miu[0],miu[1],miu[2])
 D2 = hp.dy_dx2(miu[0],miu[1],miu[2])
@@ -60,7 +69,7 @@ D = np.array([D1,D2,D3])
 #Nominal value of Y
 miuY = np.radians(7.0124)
 ##Upper specification limit
-USY = miuY + np.radians(1.0)
+USY = miuY + 0.035
 
 
   
@@ -214,7 +223,7 @@ NLOPT = 1
 opt_lib = NLOPT
 
 if opt_lib == SCIPY:  
-    if case == SCRAP: #Scrap
+    if scenario == SCRAP: #Scrap
         #Define Upper and Lower boundaries
         #The order is ([lower bnd for x1, lower bnd for x2], [Higher bnd for x1, Higher bnd for x2])        
         mbounds = Bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue],[largevalue,largevalue,largevalue,largevalue,largevalue,largevalue])        
@@ -222,7 +231,7 @@ if opt_lib == SCIPY:
         x = np.concatenate((r,k),axis = 0)
         res = minimize(obj_scipy_inspect, x, method='SLSQP', jac=obj_grad_scipy_inspect, #Nelder-Mead #SLSQP
                    options={'ftol': 1e-9, 'maxiter':1000,'disp': True},bounds=mbounds) #constraints=ineq_cons, #,callback=output
-    elif case == NOSCRAP:
+    elif scenario == NOSCRAP:
         #Define Upper and Lower boundaries
         #The order is ([lower bnd for x1, lower bnd for x2], [Higher bnd for x1, Higher bnd for x2])           
         mbounds = Bounds([smallvalue,smallvalue,smallvalue],[largevalue,largevalue,largevalue])          
@@ -231,36 +240,63 @@ if opt_lib == SCIPY:
         res = minimize(obj_scipy_noinspect, x, method='SLSQP', jac=obj_grad_scipy_noinspect, #Nelder-Mead #SLSQP
                options={'ftol': 1e-9, 'maxiter':1000,'disp': True},bounds=mbounds) #constraints=ineq_cons, #,callback=output
 elif opt_lib == NLOPT:
-    if case == SCRAP: #Scrap
+    if scenario == SCRAP: #Scrap
         opt = nlopt.opt(nlopt.LD_MMA, 2*m) # MMA (Method of Moving Asymptotes) and CCSA
         opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue])
         opt.set_min_objective(obj_nlopt_inspect)
         opt.set_xtol_rel(1e-4)
         x0 = np.concatenate((r,k),axis = 0)
         x = opt.optimize(x0)
+        U_init = hp.U_scrap(cost,USY,miuY,sigmaY_Taylor,k)
         minf = opt.last_optimum_value()
-        print("optimum at ", x[0], x[1],x[2])
+        print("optimum at ", x[0], x[1],x[2],x[3],x[4],x[5])
         print("minimum value = ", minf)
         print("result code = ", opt.last_optimize_result())        
-    elif case == NOSCRAP:
+    elif scenario == NOSCRAP:
         opt = nlopt.opt(nlopt.LD_MMA, m)
         opt.set_lower_bounds([smallvalue,smallvalue,smallvalue])
         opt.set_min_objective(obj_nlopt_noinspect)
         opt.set_xtol_rel(1e-4)
         x0 = np.copy(r)
         x = opt.optimize(x0)
+        U_init = hp.U_noscrap(cost,USY,miuY,sigmaY_Taylor)
         minf = opt.last_optimum_value()
         print("optimum at ", x[0], x[1],x[2])
         print("minimum value = ", minf)
         print("result code = ", opt.last_optimize_result())         
 
 
+
+#Compare this method and CIRP method. 
+        
+if scenario == SCRAP: #Scrap
+    ropt = x[0:m]
+    kopt = x[m:]
+    sigmaopt = hp.sigma(E,F,ropt)
+    sigmacompare = np.array([0.0833, 0.09, 0.11])
+    sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
+    rcompare = hp.sigmator(sigmacompare,E,F)
+    costcompare = hp.C(A,B,rcompare)
+    kcompare = np.array([7.3105, 1.6067, 2.2791])
+    U_compare = hp.U_scrap(costcompare,USY,miuY,sigmaY_Taylorcompare,kcompare)   
+    print('Old Method minimum value = ', U_compare )
+elif scenario == NOSCRAP:
+    ropt = x
+    sigmaopt = hp.sigma(E,F,ropt)
+    sigmacompare = np.array([0.0833, 0.09, 0.11])
+    sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
+    rcompare = hp.sigmator(sigmacompare,E,F)
+    costcompare = hp.C(A,B,rcompare)
+    U_compare = hp.U_noscrap(costcompare,USY,miuY,sigmaY_Taylorcompare)
+    print('Old Method minimum value = ', U_compare )
+
+
 from scipy.spatial import distance
 
-def gradientcheck(x,case):
+def gradientcheck(x,scenario):
     #If Scipy is used
     if opt_lib == SCIPY:  
-        if case == SCRAP:
+        if scenario == SCRAP:
             grad_equation = obj_grad_scipy_inspect(x) 
         
             #retrieve grad of r and k
@@ -269,7 +305,7 @@ def gradientcheck(x,case):
             
             grad_numerical_k = np.zeros(m)  
             grad_numerical_r = np.zeros(m)
-        elif case == NOSCRAP:
+        elif scenario == NOSCRAP:
             grad_equation_r = obj_grad_scipy_noinspect(x) 
             grad_numerical_r = np.zeros(m)
             
@@ -291,7 +327,7 @@ def gradientcheck(x,case):
             sigmaY_Taylor_plus = hp.sigmaY(sigmaX_plus,D)
             sigmaY_Taylor_minus = hp.sigmaY(sigmaX_minus,D)
             
-            if case == SCRAP:
+            if scenario == SCRAP:
                 sigmaY_Taylor_p = lamada*sigmaY_Taylor            
                 #Varify dr
                 sigmaY_Taylor_plus *= lamada
@@ -307,7 +343,7 @@ def gradientcheck(x,case):
                 print('Numerical_scrap_'+'dk'+str(i),'=',grad_numerical_k[i])          
                 print('Equation_scrap_'+'dk'+str(i),'=',grad_equation_k[i]) 
                 
-            elif case == NOSCRAP:
+            elif scenario == NOSCRAP:
                 #gradient computed by numerical estimation
                 grad_numerical_r[i] = (hp.U_noscrap(C_plus,USY,miuY,sigmaY_Taylor_plus) -
                               hp.U_noscrap(C_minus,USY,miuY,sigmaY_Taylor_minus))/(2*epsilon)
@@ -320,7 +356,7 @@ def gradientcheck(x,case):
         graderror_r = distance12_r/(length1_r + length2_r)
         print('error of dr=',graderror_r)
         
-        if case == SCRAP:
+        if scenario == SCRAP:
             distance12_k =  distance.euclidean(grad_equation_k,grad_numerical_k)
             length1_k = distance.euclidean(grad_equation_k,np.zeros_like(grad_equation_k))
             length2_k = distance.euclidean(grad_numerical_k,np.zeros_like(grad_numerical_k))
@@ -329,7 +365,7 @@ def gradientcheck(x,case):
             
     #if nlopt is used        
     elif opt_lib == NLOPT:  
-        if case == SCRAP:
+        if scenario == SCRAP:
             grad_equation = np.zeros_like(x)
             obj_nlopt_inspect(x, grad_equation)
         
@@ -339,7 +375,7 @@ def gradientcheck(x,case):
             
             grad_numerical_k = np.zeros(m)  
             grad_numerical_r = np.zeros(m)
-        elif case == NOSCRAP:
+        elif scenario == NOSCRAP:
             grad_equation = np.zeros(m)
             obj_nlopt_noinspect(x,grad_equation)
             grad_equation_r = grad_equation[0:m]
@@ -363,7 +399,7 @@ def gradientcheck(x,case):
             sigmaY_Taylor_plus = hp.sigmaY(sigmaX_plus,D)
             sigmaY_Taylor_minus = hp.sigmaY(sigmaX_minus,D)
             
-            if case == SCRAP:
+            if scenario == SCRAP:
                 sigmaY_Taylor_p = lamada*sigmaY_Taylor            
                 #Varify dr
                 sigmaY_Taylor_plus *= lamada
@@ -379,7 +415,7 @@ def gradientcheck(x,case):
                 print('Numerical_scrap_'+'dk'+str(i),'=',grad_numerical_k[i])          
                 print('Equation_scrap_'+'dk'+str(i),'=',grad_equation_k[i]) 
                 
-            elif case == NOSCRAP:
+            elif scenario == NOSCRAP:
                 #gradient computed by numerical estimation
                 grad_numerical_r[i] = (hp.U_noscrap(C_plus,USY,miuY,sigmaY_Taylor_plus) -
                               hp.U_noscrap(C_minus,USY,miuY,sigmaY_Taylor_minus))/(2*epsilon)
@@ -392,7 +428,7 @@ def gradientcheck(x,case):
         graderror_r = distance12_r/(length1_r + length2_r)
         print('error of dr=',graderror_r)
         
-        if case == SCRAP:
+        if scenario == SCRAP:
             distance12_k =  distance.euclidean(grad_equation_k,grad_numerical_k)
             length1_k = distance.euclidean(grad_equation_k,np.zeros_like(grad_equation_k))
             length2_k = distance.euclidean(grad_numerical_k,np.zeros_like(grad_numerical_k))
@@ -400,7 +436,7 @@ def gradientcheck(x,case):
             print('error of dk=',graderror_k)         
 
 #Sometimes the gradients computed by equation may explode...
-#gradientcheck(x,case)
+#gradientcheck(x,scenario)
 
 
 

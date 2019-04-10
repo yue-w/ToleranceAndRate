@@ -12,7 +12,7 @@ import math
 from scipy.special import factorial
 
 #n is the order of polimonial function to approximate the error function and its derivative
-n = 25
+n = 70
 #The design function of clutch
 def Y(x1,x2,x3):
     return math.acos((x1+x2)/(x3-x2))
@@ -145,7 +145,9 @@ def assembly(X):
 def save_data_csv(filename,data):
     np.savetxt(filename, data, delimiter=' ')
 
-
+def sigmator(sigma,E,F):
+    r = np.sqrt(np.divide(np.subtract(sigma,E),F))
+    return r
 
 
 

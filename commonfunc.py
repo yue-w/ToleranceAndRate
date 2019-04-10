@@ -32,3 +32,12 @@ def init_sigmas(CASE,p):
     sigmax2 = TX2/z
     sigmax3 = TX3/z    
     return (sigmax1,sigmax2, sigmax3,TX1,TX2,TX3)
+
+def cost(sigma):
+    t = sigma*3
+    c1 = 3.5 + 0.75/t[0]
+    c2 = 3.0 + 0.65/t[1]
+    c3 = 0.5 + 0.88/t[2]
+    cost = [c1,c2,c3]
+    return cost
+
