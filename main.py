@@ -5,6 +5,7 @@ Created on Sat Mar 16 10:48:35 2019
 @author: wyue
 Optimizing production rate. Clutch scenario Study
 """
+# Check Github
 
 #import packages
 import numpy as np
