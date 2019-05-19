@@ -18,7 +18,6 @@ import commonfunc as cf
 #number of components
 m = 3
 
-
 nsample = 10000
 
 miuX1 = 55.291

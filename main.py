@@ -25,21 +25,20 @@ largevalue= 100
 
 miu= np.array([55.291, 22.86, 101.6])
 
-r = np.array([10.0, 10.0, 10.0])
+#r = np.array([5, 10.0, 5.0])
 
 
 lamada = 0.87794
    
 SCRAP = 1
 NOSCRAP = 2
-scenario =  NOSCRAP
+scenario =  SCRAP
 
-p = 0.997
+p = 0.9
 ##Tolerance from Choi
 CASE = 1
 ##Tolerance from Zahara
 #CASE = 2
-
 
 
 (sigmaX_init1,sigmaX_init2, sigmaX_init3,TX1,TX2,TX3) = cf.init_sigmas(CASE,p)
@@ -48,16 +47,18 @@ CASE = 1
 sigmaX_init = np.array([sigmaX_init1, sigmaX_init2, sigmaX_init3])
 
 #Estimate cost
-costEst = cf.cost(sigmaX_init)
+#costEst = cf.cost(sigmaX_init)
 
 TX = np.array([TX1,TX2,TX3])
 k = np.divide(TX,sigmaX_init)
 
-A = np.array([5.0, 3.0, 1.0])
-B = np.array([20.0, 36.7, 36.0])
+A = np.array([0.87, 1.71, 3.54])#np.array([5.0, 3.0, 1.0])
+B = np.array([2.062, 1.276, 1.965]) #np.array([20.0, 36.7, 36.0])
 F = np.array([0.001798/3, 0.001653/3, 0.002/3])
 #E =  sigmaX_init - np.multiply(F,np.power(r,2)) #np.array([sigmaX_init1-1, sigmaX_init2-1, sigmaX_init3-1])
 E = np.array([0,0,0])
+
+r = hp.sigmator(sigmaX_init,E,F)
 
 D1 = hp.dy_dx1(miu[0],miu[1],miu[2])
 D2 = hp.dy_dx2(miu[0],miu[1],miu[2])
@@ -273,17 +274,17 @@ if scenario == SCRAP: #Scrap
     ropt = x[0:m]
     kopt = x[m:]
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.0833, 0.09, 0.11])
+    sigmacompare = np.array([0.0533, 0.09, 0.11])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
     rcompare = hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
-    kcompare = np.array([7.3105, 1.6067, 2.2791])
+    kcompare = np.array([4.049, 1.668889, 4.6336])
     U_compare = hp.U_scrap(costcompare,USY,miuY,sigmaY_Taylorcompare,kcompare)   
     print('Old Method minimum value = ', U_compare )
 elif scenario == NOSCRAP:
     ropt = x
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.0833, 0.09, 0.11])
+    sigmacompare = np.array([0.0533, 0.09, 0.11])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
     rcompare = hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
