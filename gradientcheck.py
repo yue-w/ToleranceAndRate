@@ -39,6 +39,9 @@ B = np.array([1.0, 2.0, 3.0])
 E = np.array([sigmax1-1, sigmax2-1, sigmax3-1])
 F = np.array([1.0, 1.0, 1.0])
 
+Sp = 0.6
+Sc = A/10
+
 D1 = hp.dy_dx1(miu[0],miu[1],miu[2])
 D2 = hp.dy_dx2(miu[0],miu[1],miu[2])
 D3 = hp.dy_dx3(miu[0],miu[1],miu[2])
@@ -91,35 +94,35 @@ for i in range(0,m):
         sigmaY_Taylor_plus *= lamada
         sigmaY_Taylor_minus *= lamada
         #gradient computed by numerical estimation
-        grad_numerical_r[i] = (hp.U_scrap(C_plus,USY,miuY,sigmaY_Taylor_plus,k)
-        - hp.U_scrap(C_minus,USY,miuY,sigmaY_Taylor_minus,k))/(2*epsilon)
+        grad_numerical_r[i] = (hp.U_scrap(C_plus,USY,miuY,sigmaY_Taylor_plus,k,Sp,Sc)
+        - hp.U_scrap(C_minus,USY,miuY,sigmaY_Taylor_minus,k,Sp,Sc))/(2*epsilon)
         print('Numerical_scrap_'+'dr'+str(i),'=',grad_numerical_r[i])     
         #gradient computed by equation
         dCi_dri_v = hp.dCi_dri(B[i],r[i])
         dsigmai_dri_v = hp.dsigmai_dri(F[i],r[i])
         dsigmaY_dri_v = hp.dsigmaY_dri(D,sigmaX,r,i,dsigmai_dri_v)
-        grad_equation_r[i] = hp.dU_dri_scrap(USY,miuY,sigmaY_Taylor_p,C,k,i,lamada,dsigmaY_dri_v,dCi_dri_v)
+        grad_equation_r[i] = hp.dU_dri_scrap(USY,miuY,sigmaY_Taylor_p,C,k,i,lamada,dsigmaY_dri_v,dCi_dri_v,Sp,Sc)
         print('Equation_scrap_'+'dr'+str(i),'=',grad_equation_r[i])
         
         #varify dk
-        grad_numerical_k[i] = (hp.U_scrap(C,USY,miuY,sigmaY_Taylor_p,ki_add_epsilon)
-        - hp.U_scrap(C,USY,miuY,sigmaY_Taylor_p,ki_minus_epsilon))/(2*epsilon)
+        grad_numerical_k[i] = (hp.U_scrap(C,USY,miuY,sigmaY_Taylor_p,ki_add_epsilon,Sp,Sc)
+        - hp.U_scrap(C,USY,miuY,sigmaY_Taylor_p,ki_minus_epsilon,Sp,Sc))/(2*epsilon)
         print('Numerical_scrap_'+'dk'+str(i),'=',grad_numerical_k[i])     
         #gradient computed by equation
-        grad_equation_k[i] = hp.dU_dki_scrap(USY, miuY,sigmaY_Taylor_p,k[i],C[i])
+        grad_equation_k[i] = hp.dU_dki_scrap(USY, miuY,sigmaY_Taylor_p,k[i],C[i],Sc[i])
         print('Equation_scrap_'+'dk'+str(i),'=',grad_equation_k[i])        
         
 
     elif scrap == 0: #No scrap
         #gradient computed by numerical estimation
-        grad_numerical_r[i] = (hp.U_noscrap(C_plus,USY,miuY,sigmaY_Taylor_plus) -
-                      hp.U_noscrap(C_minus,USY,miuY,sigmaY_Taylor_minus))/(2*epsilon)
+        grad_numerical_r[i] = (hp.U_noscrap(C_plus,USY,miuY,sigmaY_Taylor_plus,Sp) -
+                      hp.U_noscrap(C_minus,USY,miuY,sigmaY_Taylor_minus,Sp))/(2*epsilon)
         print('Numerical_No scrap_'+'dr'+str(i),'=',grad_numerical_r[i])
         #gradient computed by equation
         dCi_dri_v = hp.dCi_dri(B[i],r[i])
         dsigmai_dri_v = hp.dsigmai_dri(F[i],r[i])
         dsigmaY_dri_v = hp.dsigmaY_dri(D,sigmaX,r,i,dsigmai_dri_v)        
-        grad_equation_r[i] = hp.dU_dri_noscrap(USY,miuY,sigmaY_Taylor,C,k,i,dsigmaY_dri_v,dCi_dri_v)
+        grad_equation_r[i] = hp.dU_dri_noscrap(USY,miuY,sigmaY_Taylor,C,k,i,dsigmaY_dri_v,dCi_dri_v,Sp)
         print('Equation_No scrap_'+'dr'+str(i),'=',grad_equation_r[i])
 
         

@@ -24,18 +24,31 @@ def sigmaY(sigmaX,D):
     return np.sqrt(VY)
 
 #Objective function: Unit cost of a product
-def U_scrap(C,USY,miuY,sigmaYp,k):
+def U_scrap(C,USY,miuY,sigmaYp,k,Sp,Sc):
  #The parameters are arrays.   
     USp = USY - miuY
     sqrt2 = np.sqrt(2)
-    return np.sum(np.divide(C,erf(k/sqrt2)))/erf(USp/sqrt2/sigmaYp)
+    erfV = erf(USp/sqrt2/sigmaYp)
+    erfK = erf(k/sqrt2)
+    term1 = np.sum(np.divide(C,erfK))/erfV
+    tem = np.divide(1,erfK)
+    tem2 = np.subtract(tem,1)
+    tem3 = np.multiply(Sc,tem2)
+    term2 = np.sum(tem3)/erfV
+    term3 = (1/erfV - 1) * Sp
+    return term1 + term2 + term3
+    #return np.sum(np.divide(C,erf(k/sqrt2)))/erf(USp/sqrt2/sigmaYp)
 
 #Objective function: Unit cost of a product
-def U_noscrap(C,USY,miuY,sigmaY):
+def U_noscrap(C,USY,miuY,sigmaY,Sp):
  #The parameters are arrays.   
     USp = USY - miuY
     sqrt2 = np.sqrt(2)
-    return np.sum(C)/erf(USp/sqrt2/sigmaY)    
+    erfV = erf(USp/sqrt2/sigmaY) 
+    term1 = np.sum(C)/erfV
+    term2 = (1/erfV-1) * Sp
+    
+    return term1 + term2
     
 #Cost-Rate function. The ith component is the ith component in the returned array
 def C(A,B,r):
@@ -85,33 +98,34 @@ def dsigmaY_dri(D,sigma,r,i,dsigma_dr):
     return np.power(sum,-0.5)*(D[i]**2)*sigma[i]*dsigma_dr
 
 #dU_dri No scrap
-def dU_dri_noscrap(USY, miuY,sigmaY,C,k,i,dsigmaY_dri,dCi_dri):
+def dU_dri_noscrap(USY, miuY,sigmaY,C,k,i,dsigmaY_dri,dCi_dri,Sp):
     USp=USY - miuY
     tem1 = USp/(np.sqrt(2)*sigmaY)
     tem2 = tem1/sigmaY
     tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1,n)*tem2*dsigmaY_dri
-    tem4 = np.sum(C)
+    tem4 = np.sum(C) + Sp
     tem5 = dCi_dri/erf(tem1)
     return tem3*tem4 + tem5
 
 #dU_dri Scrap
-def dU_dri_scrap(USY, miuY,sigmaYp,C,k,i,lamada,dsigmaY_dri,dCi_dri):
+def dU_dri_scrap(USY, miuY,sigmaYp,C,k,i,lamada,dsigmaY_dri,dCi_dri,Sp,Sc):
     USp = USY - miuY
     sqrt2 = np.sqrt(2)
     tem1 = USp/(sqrt2*sigmaYp)
     tem2 = tem1/sigmaYp
     tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1,n)*tem2*dsigmaY_dri*lamada
-    tem4 = np.sum(np.divide(C,erf(k/sqrt2)))
-    tem5 = dCi_dri/(erf(tem1)*erf(k[i]/sqrt2))
-    return tem3*tem4 + tem5
+    tem4 = np.sum(np.multiply((np.divide(1,erf(k/sqrt2))-1),Sc))
+    tem5 = np.sum(np.divide(C,erf(k/sqrt2))) + tem4 + Sp
+    tem6 = dCi_dri/(erf(tem1)*erf(k[i]/sqrt2))
+    return tem3*tem5 + tem6
 
 #dU_dki
-def dU_dki_scrap(USY, miuY,sigmaYp,ki,Ci):
+def dU_dki_scrap(USY, miuY,sigmaYp,ki,Ci,Sci):
     USp = USY - miuY
     sqrt2 = np.sqrt(2)
     tem1 = USp/(sqrt2*sigmaYp)
     tem2 = ki/sqrt2
-    return -Ci/sqrt2*derf_dx(tem2,n)/erf(tem1)/np.power(erf(tem2),2)
+    return -np.add(Ci,Sci)/sqrt2*derf_dx(tem2,n)/erf(tem1)/np.power(erf(tem2),2)
     
 #Define some helper functions
 def produce_satisfactory_output(miu, sigma, Q, TOL):
