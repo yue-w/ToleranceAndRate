@@ -24,22 +24,25 @@ miuY = np.radians(7.0124)
 
 miu= np.array([55.291, 22.86, 101.6])
 
-r = np.array([1.0, 1.0, 1.0])
+#r = np.array([1.0, 1.0, 1.0])
 
 CASE = 2
-p = 0.95
+p = 0.90
 (sigmax1,sigmax2, sigmax3,TX1,TX2,TX3) = cf.init_sigmas(CASE,p)
 
 sigmaX = np.array([sigmax1, sigmax2, sigmax3])
 TX = np.array([TX1,TX2,TX3])
 k = np.divide(TX,sigmaX)
 
-A = np.array([1.0, 2.0, 3.0])
-B = np.array([1.0, 2.0, 3.0])
-E = np.array([sigmax1-1, sigmax2-1, sigmax3-1])
-F = np.array([1.0, 1.0, 1.0])
+A = np.array([0.87, 1.71, 3.54])#np.array([5.0, 3.0, 1.0])
+B = np.array([2.062, 1.276, 1.965]) #np.array([20.0, 36.7, 36.0])
+F = np.array([0.001798/3, 0.001653/3, 0.002/3])
+#E =  sigmaX_init - np.multiply(F,np.power(r,2)) #np.array([sigmaX_init1-1, sigmaX_init2-1, sigmaX_init3-1])
+E = np.array([0.083,0.096,0.129])/100
 
-Sp = 0.6
+#Scrap cost of a product
+Sp = np.sum(A)/10
+#Scrap costs of components
 Sc = A/10
 
 D1 = hp.dy_dx1(miu[0],miu[1],miu[2])
@@ -48,6 +51,7 @@ D3 = hp.dy_dx3(miu[0],miu[1],miu[2])
 
 D = np.array([D1,D2,D3])
 
+r=hp.sigmator(sigmaX,E,F)
 #Compute Unit Cost of initial value
 C = hp.C(A,B,r)
 
@@ -63,7 +67,7 @@ USY = miuY + np.radians(2.0)
 #U = hp.U_scrap(C,USY,sigmaY,k)
 
 lamada = 0.87794
-scrap = 1
+INSPECT = 1
 
 
 grad_numerical_r = np.zeros(m)
@@ -87,7 +91,7 @@ for i in range(0,m):
     ki_add_epsilon[i] += epsilon
     ki_minus_epsilon[i] -= epsilon
    
-    if scrap == 1: #Scrap unsatisfactory components      
+    if INSPECT == 1: #Scrap unsatisfactory components      
         sigmaY_Taylor_p = lamada*sigmaY_Taylor
         
         #Varify dr
@@ -113,7 +117,7 @@ for i in range(0,m):
         print('Equation_scrap_'+'dk'+str(i),'=',grad_equation_k[i])        
         
 
-    elif scrap == 0: #No scrap
+    elif INSPECT == 0: #No INSPECT
         #gradient computed by numerical estimation
         grad_numerical_r[i] = (hp.U_noscrap(C_plus,USY,miuY,sigmaY_Taylor_plus,Sp) -
                       hp.U_noscrap(C_minus,USY,miuY,sigmaY_Taylor_minus,Sp))/(2*epsilon)
@@ -132,7 +136,7 @@ length2_r = distance.euclidean(grad_numerical_r,np.zeros_like(grad_numerical_r))
 graderror_r = distance12_r/(length1_r + length2_r)
 print('error of dr=',graderror_r)
 
-if scrap == 1: #No scrap            
+if INSPECT == 1: #No INSPECT            
     distance12_k =  distance.euclidean(grad_equation_k,grad_numerical_k)
     length1_k = distance.euclidean(grad_equation_k,np.zeros_like(grad_equation_k))
     length2_k = distance.euclidean(grad_numerical_k,np.zeros_like(grad_numerical_k))

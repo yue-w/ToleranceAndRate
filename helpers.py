@@ -152,8 +152,10 @@ def assembly(X):
     X1=X[0,:]
     X2=X[1,:]
     X3=X[2,:]
-    #Y=np.arccos(np.divide((X1+X2),(X3-X2)))
-    Y=np.arccos((X1+X2)/(X3-X2))
+    dividV = np.divide((X1+X2),(X3-X2))
+    dividV = dividV[np.logical_and(dividV>=-1,dividV<=1)]
+    Y=np.arccos(dividV)
+    #Y=np.arccos(np.divide((X1+X2),(X3-X2))) 
     return Y
 
 def save_data_csv(filename,data):
@@ -163,7 +165,22 @@ def sigmator(sigma,E,F):
     r = np.sqrt(np.divide(np.subtract(sigma,E),F))
     return r
 
-
+def updateLambda(D,sigmaX,k,miuX,NSample):
+    tol = np.multiply(sigmaX,k)
+    sigmaY_equation = sigmaY(sigmaX,D)
+    
+    #Sigma estimated by simulation - with scrap
+    (X1_satis,N1) = produce_satisfactory_output(miuX[0], sigmaX[0], NSample, tol[0])
+    (X2_satis,N2) = produce_satisfactory_output(miuX[1], sigmaX[1], NSample, tol[1])
+    (X3_satis,N3) = produce_satisfactory_output(miuX[2], sigmaX[2], NSample, tol[2])
+    X = np.array([X1_satis,X2_satis,X3_satis])
+    products_simulation_satis = assembly(X)
+    sigmaY_simulation_satis = np.std(products_simulation_satis)
+    
+    
+    lamada =  sigmaY_simulation_satis/sigmaY_equation    
+    
+    return lamada
 
 
 

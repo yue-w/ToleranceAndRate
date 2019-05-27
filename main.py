@@ -17,7 +17,9 @@ import nlopt
 from scipy.spatial import distance
 #number of components
 m = 3
-
+#Sample size in simulation
+NSample = 100000
+#Computation Precision
 epsilon = 1e-7
 
 smallvalue = 1e-2 # Lower bound is 0, to prevent dividing by zero, set lower bond to a small value
@@ -29,13 +31,13 @@ miu= np.array([55.291, 22.86, 101.6])
 #r = np.array([5, 10.0, 5.0])
 
 
-lamada = 0.87794
+lamada = 1#0.876
    
-SCRAP = 1
-NOSCRAP = 2
-scenario =  SCRAP
+INSPECT = 1
+NOINSPECT = 2
+scenario =  INSPECT
 
-p = 0.9
+p = 0.8
 ##Tolerance from Choi
 CASE = 1
 ##Tolerance from Zahara
@@ -57,14 +59,16 @@ A = np.array([0.87, 1.71, 3.54])#np.array([5.0, 3.0, 1.0])
 B = np.array([2.062, 1.276, 1.965]) #np.array([20.0, 36.7, 36.0])
 F = np.array([0.001798/3, 0.001653/3, 0.002/3])
 #E =  sigmaX_init - np.multiply(F,np.power(r,2)) #np.array([sigmaX_init1-1, sigmaX_init2-1, sigmaX_init3-1])
-E = np.array([0,0,0])
+E = np.array([0.083,0.096,0.129])
+#E = np.array([0,0,0])
 
 #Scrap cost of a product
-Sp = np.sum(A)/10
+Sp = 0.0*np.sum(A)/10
 #Scrap costs of components
-Sc = A/10
+Sc =0.0* A/10
 
 r = hp.sigmator(sigmaX_init,E,F)
+#r = np.array([3,5,10])
 
 D1 = hp.dy_dx1(miu[0],miu[1],miu[2])
 D2 = hp.dy_dx2(miu[0],miu[1],miu[2])
@@ -91,6 +95,8 @@ def obj_scipy_inspect(x):
     k = x[num_m:] 
     sigmaX = hp.sigma(E,F,r)    
     sigmaY_Taylor = hp.sigmaY(sigmaX,D)
+    #Update Lambda by simulation
+    #lamada = hp.updateLambda(D,sigmaX,k,miu,NSample)
     sigmaY_Taylor = lamada*sigmaY_Taylor    
     #Compute Unit Cost    
     C = hp.C(A,B,r)
@@ -108,6 +114,8 @@ def obj_grad_scipy_inspect(x):
     k = x[m:] 
     sigmaX = hp.sigma(E,F,r)  
     sigmaY_Taylor = hp.sigmaY(sigmaX,D)
+    #Update Lambda by simulation
+    #lamada = hp.updateLambda(D,sigmaX,k,miu,NSample)    
     sigmaY_Taylor = lamada*sigmaY_Taylor
     #Compute Unit Cost    
     C = hp.C(A,B,r)       
@@ -158,14 +166,14 @@ def obj_nlopt_inspect(x, grad):
     k = x[num_m:] 
     sigmaX = hp.sigma(E,F,r)    
     sigmaY_Taylor = hp.sigmaY(sigmaX,D)
+    #Update Lambda by simulation
+    #global lamada
+    #lamada = hp.updateLambda(D,sigmaX,k,miu,NSample)    
     sigmaY_Taylor = lamada*sigmaY_Taylor    
     #Compute Unit Cost    
     C = hp.C(A,B,r)
     U = hp.U_scrap(C,USY,miuY,sigmaY_Taylor,k,Sp,Sc)
 
-    sigmaX = hp.sigma(E,F,r)  
-    sigmaY_Taylor = hp.sigmaY(sigmaX,D)
-    sigmaY_Taylor = lamada*sigmaY_Taylor
     #Compute Unit Cost    
     C = hp.C(A,B,r)       
     for i in range(0,m):  # Change this for loop to vectorization 
@@ -233,7 +241,7 @@ opt_lib = NLOPT
 def gradientcheck(x,scenario):
     #If Scipy is used
     if opt_lib == SCIPY:  
-        if scenario == SCRAP:
+        if scenario == INSPECT:
             grad_equation = obj_grad_scipy_inspect(x) 
         
             #retrieve grad of r and k
@@ -242,7 +250,7 @@ def gradientcheck(x,scenario):
             
             grad_numerical_k = np.zeros(m)  
             grad_numerical_r = np.zeros(m)
-        elif scenario == NOSCRAP:
+        elif scenario == NOINSPECT:
             grad_equation_r = obj_grad_scipy_noinspect(x) 
             grad_numerical_r = np.zeros(m)
             
@@ -264,7 +272,7 @@ def gradientcheck(x,scenario):
             sigmaY_Taylor_plus = hp.sigmaY(sigmaX_plus,D)
             sigmaY_Taylor_minus = hp.sigmaY(sigmaX_minus,D)
             
-            if scenario == SCRAP:
+            if scenario == INSPECT:
                 sigmaY_Taylor_p = lamada*sigmaY_Taylor            
                 #Varify dr
                 sigmaY_Taylor_plus *= lamada
@@ -280,7 +288,7 @@ def gradientcheck(x,scenario):
                 print('Numerical_scrap_'+'dk'+str(i),'=',grad_numerical_k[i])          
                 print('Equation_scrap_'+'dk'+str(i),'=',grad_equation_k[i]) 
                 
-            elif scenario == NOSCRAP:
+            elif scenario == NOINSPECT:
                 #gradient computed by numerical estimation
                 grad_numerical_r[i] = (hp.U_noscrap(C_plus,USY,miuY,sigmaY_Taylor_plus,Sp) -
                               hp.U_noscrap(C_minus,USY,miuY,sigmaY_Taylor_minus,Sp))/(2*epsilon)
@@ -293,7 +301,7 @@ def gradientcheck(x,scenario):
         graderror_r = distance12_r/(length1_r + length2_r)
         print('error of dr=',graderror_r)
         
-        if scenario == SCRAP:
+        if scenario == INSPECT:
             distance12_k =  distance.euclidean(grad_equation_k,grad_numerical_k)
             length1_k = distance.euclidean(grad_equation_k,np.zeros_like(grad_equation_k))
             length2_k = distance.euclidean(grad_numerical_k,np.zeros_like(grad_numerical_k))
@@ -302,7 +310,7 @@ def gradientcheck(x,scenario):
             
     #if nlopt is used        
     elif opt_lib == NLOPT:  
-        if scenario == SCRAP:
+        if scenario == INSPECT:
             grad_equation = np.zeros_like(x)
             obj_nlopt_inspect(x, grad_equation)
         
@@ -312,7 +320,7 @@ def gradientcheck(x,scenario):
             
             grad_numerical_k = np.zeros(m)  
             grad_numerical_r = np.zeros(m)
-        elif scenario == NOSCRAP:
+        elif scenario == NOINSPECT:
             grad_equation = np.zeros(m)
             obj_nlopt_noinspect(x,grad_equation)
             grad_equation_r = grad_equation[0:m]
@@ -336,7 +344,7 @@ def gradientcheck(x,scenario):
             sigmaY_Taylor_plus = hp.sigmaY(sigmaX_plus,D)
             sigmaY_Taylor_minus = hp.sigmaY(sigmaX_minus,D)
             
-            if scenario == SCRAP:
+            if scenario == INSPECT:
                 sigmaY_Taylor_p = lamada*sigmaY_Taylor            
                 #Varify dr
                 sigmaY_Taylor_plus *= lamada
@@ -352,7 +360,7 @@ def gradientcheck(x,scenario):
                 print('Numerical_scrap_'+'dk'+str(i),'=',grad_numerical_k[i])          
                 print('Equation_scrap_'+'dk'+str(i),'=',grad_equation_k[i]) 
                 
-            elif scenario == NOSCRAP:
+            elif scenario == NOINSPECT:
                 #gradient computed by numerical estimation
                 grad_numerical_r[i] = (hp.U_noscrap(C_plus,USY,miuY,sigmaY_Taylor_plus,Sp) -
                               hp.U_noscrap(C_minus,USY,miuY,sigmaY_Taylor_minus,Sp))/(2*epsilon)
@@ -365,7 +373,7 @@ def gradientcheck(x,scenario):
         graderror_r = distance12_r/(length1_r + length2_r)
         print('error of dr=',graderror_r)
         
-        if scenario == SCRAP:
+        if scenario == INSPECT:
             distance12_k =  distance.euclidean(grad_equation_k,grad_numerical_k)
             length1_k = distance.euclidean(grad_equation_k,np.zeros_like(grad_equation_k))
             length2_k = distance.euclidean(grad_numerical_k,np.zeros_like(grad_numerical_k))
@@ -377,7 +385,7 @@ def gradientcheck(x,scenario):
 
 
 if opt_lib == SCIPY:  
-    if scenario == SCRAP: #Scrap
+    if scenario == INSPECT: #Scrap
         #Define Upper and Lower boundaries
         #The order is ([lower bnd for x1, lower bnd for x2], [Higher bnd for x1, Higher bnd for x2])        
         mbounds = Bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue],[largevalue,largevalue,largevalue,largevalue,largevalue,largevalue])        
@@ -385,7 +393,7 @@ if opt_lib == SCIPY:
         x = np.concatenate((r,k),axis = 0)
         res = minimize(obj_scipy_inspect, x, method='SLSQP', jac=obj_grad_scipy_inspect, #Nelder-Mead #SLSQP
                    options={'ftol': 1e-9, 'maxiter':1000,'disp': True},bounds=mbounds) #constraints=ineq_cons, #,callback=output
-    elif scenario == NOSCRAP:
+    elif scenario == NOINSPECT:
         #Define Upper and Lower boundaries
         #The order is ([lower bnd for x1, lower bnd for x2], [Higher bnd for x1, Higher bnd for x2])           
         mbounds = Bounds([smallvalue,smallvalue,smallvalue],[largevalue,largevalue,largevalue])          
@@ -394,9 +402,10 @@ if opt_lib == SCIPY:
         res = minimize(obj_scipy_noinspect, x, method='SLSQP', jac=obj_grad_scipy_noinspect, #Nelder-Mead #SLSQP
                options={'ftol': 1e-9, 'maxiter':1000,'disp': True},bounds=mbounds) #constraints=ineq_cons, #,callback=output
 elif opt_lib == NLOPT:
-    if scenario == SCRAP: #Scrap
+    if scenario == INSPECT: #Scrap
         opt = nlopt.opt(nlopt.LD_MMA, 2*m) # MMA (Method of Moving Asymptotes) and CCSA
         opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue])
+        opt.set_upper_bounds([15,15,15,6,6,6])
         opt.set_min_objective(obj_nlopt_inspect)
         opt.set_xtol_rel(1e-4)
         x0 = np.concatenate((r,k),axis = 0)
@@ -406,7 +415,7 @@ elif opt_lib == NLOPT:
         print("optimum at ", x[0], x[1],x[2],x[3],x[4],x[5])
         print("minimum value = ", minf)
         print("result code = ", opt.last_optimize_result())        
-    elif scenario == NOSCRAP:
+    elif scenario == NOINSPECT:
         opt = nlopt.opt(nlopt.LD_MMA, m)
         opt.set_lower_bounds([smallvalue,smallvalue,smallvalue])
         opt.set_min_objective(obj_nlopt_noinspect)
@@ -423,22 +432,27 @@ elif opt_lib == NLOPT:
 
 #Compare this method and CIRP method. 
         
-if scenario == SCRAP: #Scrap
+if scenario == INSPECT: #Scrap
     ropt = x[0:m]
     kopt = x[m:]
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.0533, 0.09, 0.11])
+    sigmacompare = np.array([0.11,0.1,0.15])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
+    #Update Lambda by simulation
+    #lamada = hp.updateLambda(D,sigmacompare,k,miu,NSample)   
+    lamada = 0.876
+    sigmaY_Taylorcompare = lamada*sigmaY_Taylorcompare
     rcompare = hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
-    kcompare = np.array([4.049, 1.668889, 4.6336])
+    kcompare = np.array([2.05, 1.385, 3.478])
     U_compare = hp.U_scrap(costcompare,USY,miuY,sigmaY_Taylorcompare,kcompare,Sp,Sc)   
     print('Old Method minimum value = ', U_compare )
-elif scenario == NOSCRAP:
+elif scenario == NOINSPECT:
     ropt = x
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.0533, 0.09, 0.11])
+    sigmacompare = np.array([0.11,0.1,0.15])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
+    #sigmaY_Taylorcompare = lamada*sigmaY_Taylorcompare
     rcompare = hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
     U_compare = hp.U_noscrap(costcompare,USY,miuY,sigmaY_Taylorcompare,Sp)
