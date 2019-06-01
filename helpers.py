@@ -182,12 +182,17 @@ def updateLambda(D,sigmaX,k,miuX,NSample):
     
     return lamada
 
+def simulateSigmaY(D,sigmaX,miuX,NSample):
+   #Estimate sigmaY by simulation instead of equation. 
+    X1 = np.random.normal(miuX[0], sigmaX[0], NSample)
+    X2 = np.random.normal(miuX[1], sigmaX[1], NSample)
+    X3 = np.random.normal(miuX[2], sigmaX[2], NSample)
+    X = np.array([X1,X2,X3])
 
+    products_simulation_satis = assembly(X)
+    sigmaY_simulation = np.std(products_simulation_satis)
 
-
-
-
-
+    return sigmaY_simulation
 
 
 

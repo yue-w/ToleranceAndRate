@@ -18,12 +18,12 @@ from scipy.spatial import distance
 #number of components
 m = 3
 #Sample size in simulation
-NSample = 100000
+NSample = 10000
 #Computation Precision
 epsilon = 1e-7
 
 smallvalue = 1e-2 # Lower bound is 0, to prevent dividing by zero, set lower bond to a small value
-largevalue= 100
+largevalue= 20
 
 
 miu= np.array([55.291, 22.86, 101.6])
@@ -49,26 +49,20 @@ CASE = 1
 
 sigmaX_init = np.array([sigmaX_init1, sigmaX_init2, sigmaX_init3])
 
-#Estimate cost
-#costEst = cf.cost(sigmaX_init)
 
-TX = np.array([TX1,TX2,TX3])
-k = np.divide(TX,sigmaX_init)
 
 A = np.array([0.87, 1.71, 3.54])#np.array([5.0, 3.0, 1.0])
 B = np.array([2.062, 1.276, 1.965]) #np.array([20.0, 36.7, 36.0])
 F = np.array([0.001798/3, 0.001653/3, 0.002/3])
-#E =  sigmaX_init - np.multiply(F,np.power(r,2)) #np.array([sigmaX_init1-1, sigmaX_init2-1, sigmaX_init3-1])
-E = np.array([0.083,0.096,0.129])
-#E = np.array([0,0,0])
+#E = np.array([0.083,0.096,0.129])
+E = 2.0*np.array([0.083,0.096,0.129])
 
 #Scrap cost of a product
 Sp = np.sum(A)/10
 #Scrap costs of components
 Sc = A/10
 
-r = hp.sigmator(sigmaX_init,E,F)
-#r = np.array([3,5,10])
+
 
 D1 = hp.dy_dx1(miu[0],miu[1],miu[2])
 D2 = hp.dy_dx2(miu[0],miu[1],miu[2])
@@ -85,6 +79,8 @@ USY = miuY + 0.035
 
   
 #Concatenate r and k into a numpy array
+r = np.array([15,15,15])
+k = np.array([3,3,3])
 x = np.concatenate((r,k),axis=0)
 
 #obj_scipy_inspect function
@@ -262,7 +258,7 @@ elif opt_lib == NLOPT:
     if scenario == INSPECT: #Scrap
         opt = nlopt.opt(nlopt.LD_MMA, 2*m) # MMA (Method of Moving Asymptotes) and CCSA
         opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue])
-        opt.set_upper_bounds([15,15,15,8,8,8])
+        opt.set_upper_bounds([largevalue,largevalue,largevalue,8,8,8])
         opt.set_min_objective(obj_nlopt_inspect)
         opt.set_xtol_rel(1e-4)
         x0 = np.concatenate((r,k),axis = 0)
@@ -293,11 +289,11 @@ if scenario == INSPECT: #Scrap
     ropt = x[0:m]
     kopt = x[m:]
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.11,0.1,0.15])
+    sigmacompare = np.array([0.2,0.2,0.29])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
     rcompare = hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
-    kcompare = np.array([2.05, 1.385, 3.478])
+    kcompare = np.array([1.1955, 0.877, 1.492759])
     #Update Lambda by simulation
     lamada = hp.updateLambda(D,sigmacompare,kcompare,miu,NSample)   
     #lamada = 0.876
@@ -307,14 +303,13 @@ if scenario == INSPECT: #Scrap
 elif scenario == NOINSPECT:
     ropt = x
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.11,0.1,0.15])
+    sigmacompare = np.array([0.2,0.2,0.29])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
     #sigmaY_Taylorcompare = lamada*sigmaY_Taylorcompare
     rcompare = hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
     U_compare = hp.U_noscrap(costcompare,USY,miuY,sigmaY_Taylorcompare,Sp)
     print('Old Method minimum value = ', U_compare )
-
 
 
 
