@@ -53,9 +53,9 @@ sigmaX_init = np.array([sigmaX_init1, sigmaX_init2, sigmaX_init3])
 
 A = np.array([0.87, 1.71, 3.54])#np.array([5.0, 3.0, 1.0])
 B = np.array([2.062, 1.276, 1.965]) #np.array([20.0, 36.7, 36.0])
-F = np.array([0.001798/3, 0.001653/3, 0.002/3])
+F = np.array([0.0020, 0.0013, 0.0040])
 #E = np.array([0.083,0.096,0.129])
-E = 2.0*np.array([0.083,0.096,0.129])
+E = 0.65 * np.array([0.080,0.096,0.120])
 
 #Scrap cost of a product
 Sp = np.sum(A)/10
@@ -79,7 +79,7 @@ USY = miuY + 0.035
 
   
 #Concatenate r and k into a numpy array
-r = np.array([15,15,15])
+r = np.array([5,5,5])
 k = np.array([3,3,3])
 x = np.concatenate((r,k),axis=0)
 
@@ -258,7 +258,7 @@ elif opt_lib == NLOPT:
     if scenario == INSPECT: #Scrap
         opt = nlopt.opt(nlopt.LD_MMA, 2*m) # MMA (Method of Moving Asymptotes) and CCSA
         opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue])
-        opt.set_upper_bounds([largevalue,largevalue,largevalue,8,8,8])
+        #opt.set_upper_bounds([largevalue,largevalue,largevalue,8,8,8])
         opt.set_min_objective(obj_nlopt_inspect)
         opt.set_xtol_rel(1e-4)
         x0 = np.concatenate((r,k),axis = 0)
@@ -289,11 +289,11 @@ if scenario == INSPECT: #Scrap
     ropt = x[0:m]
     kopt = x[m:]
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.2,0.2,0.29])
+    sigmacompare = sigmaopt#np.array([0.2,0.2,0.29])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
-    rcompare = hp.sigmator(sigmacompare,E,F)
+    rcompare = ropt #hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
-    kcompare = np.array([1.1955, 0.877, 1.492759])
+    kcompare = np.array([3, 3, 3])#np.array([2.450709, 1.9927, 3.1678])
     #Update Lambda by simulation
     lamada = hp.updateLambda(D,sigmacompare,kcompare,miu,NSample)   
     #lamada = 0.876
@@ -303,7 +303,7 @@ if scenario == INSPECT: #Scrap
 elif scenario == NOINSPECT:
     ropt = x
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.2,0.2,0.29])
+    sigmacompare = np.array([0.1,0.07,0.12])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
     #sigmaY_Taylorcompare = lamada*sigmaY_Taylorcompare
     rcompare = hp.sigmator(sigmacompare,E,F)
