@@ -55,7 +55,7 @@ A = np.array([0.87, 1.71, 3.54])#np.array([5.0, 3.0, 1.0])
 B = np.array([2.062, 1.276, 1.965]) #np.array([20.0, 36.7, 36.0])
 F = np.array([0.0020, 0.0013, 0.0040])
 #E = np.array([0.083,0.096,0.129])
-E = 0.65 * np.array([0.080,0.096,0.120])
+E = 0.45 * np.array([0.080,0.096,0.120])
 
 #Scrap cost of a product
 Sp = np.sum(A)/10
@@ -257,8 +257,10 @@ if opt_lib == SCIPY:
 elif opt_lib == NLOPT:
     if scenario == INSPECT: #Scrap
         opt = nlopt.opt(nlopt.LD_MMA, 2*m) # MMA (Method of Moving Asymptotes) and CCSA
-        opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue])
-        #opt.set_upper_bounds([largevalue,largevalue,largevalue,8,8,8])
+        lbK = 2.0
+        ubK = 10.0
+        opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,lbK,lbK,lbK])
+        #opt.set_upper_bounds([largevalue,largevalue,largevalue,5,5,5])
         opt.set_min_objective(obj_nlopt_inspect)
         opt.set_xtol_rel(1e-4)
         x0 = np.concatenate((r,k),axis = 0)
