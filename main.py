@@ -291,11 +291,11 @@ if scenario == INSPECT: #Scrap
     ropt = x[0:m]
     kopt = x[m:]
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = sigmaopt#np.array([0.2,0.2,0.29])
+    sigmacompare = np.array([0.09,0.06,0.1])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
-    rcompare = ropt #hp.sigmator(sigmacompare,E,F)
+    rcompare = hp.sigmator(sigmacompare,E,F)
     costcompare = hp.C(A,B,rcompare)
-    kcompare = np.array([3, 3, 3])#np.array([2.450709, 1.9927, 3.1678])
+    kcompare = np.array([2.47, 2.34, 2.83])#np.array([2.450709, 1.9927, 3.1678])
     #Update Lambda by simulation
     lamada = hp.updateLambda(D,sigmacompare,kcompare,miu,NSample)   
     #lamada = 0.876
@@ -305,7 +305,7 @@ if scenario == INSPECT: #Scrap
 elif scenario == NOINSPECT:
     ropt = x
     sigmaopt = hp.sigma(E,F,ropt)
-    sigmacompare = np.array([0.1,0.07,0.12])
+    sigmacompare = np.array([0.09,0.06,0.1])
     sigmaY_Taylorcompare = hp.sigmaY(sigmacompare,D)
     #sigmaY_Taylorcompare = lamada*sigmaY_Taylorcompare
     rcompare = hp.sigmator(sigmacompare,E,F)
