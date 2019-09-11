@@ -1,17 +1,14 @@
-import functions as f
+# =============================================================================
+# import functions as f
+# 
+# import numpy as np
+# 
+# import nlopt
+# 
+# from pandas import DataFrame
+# =============================================================================
 
-import numpy as np
+import pandas as pd
 
-import nlopt
-
-a = 4
-
-def testF():
-    print(a)
-    
-def testF2():
-    global a 
-    a = 2
-    testF()
-
-testF2()    
+df=pd.read_excel("Test.xlsx",sheet_name='sheet1')
+print(df['noinspect_U'][0])

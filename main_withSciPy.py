@@ -29,7 +29,7 @@ miu= np.array([55.291, 22.86, 101.6])
 #r = np.array([5, 10.0, 5.0])
 
 
-#lamada = 1#0.876
+lamada = 1#0.876
    
 INSPECT = 1
 NOINSPECT = 2
@@ -161,8 +161,8 @@ def obj_nlopt_inspect(x, grad):
     sigmaX = hp.sigma(E,F,r)    
     sigmaY_Taylor = hp.sigmaY(sigmaX,D)
     #Update Lambda by simulation
-    #global lamada
-    lamada = hp.updateLambda(D,sigmaX,k,miu,NSample)    
+    global lamada
+    #lamada = hp.updateLambda(D,sigmaX,k,miu,NSample)    
     sigmaY_Taylor = lamada*sigmaY_Taylor    
     #Compute Unit Cost    
     C = hp.C(A,B,r)
@@ -296,7 +296,7 @@ if scenario == INSPECT: #Scrap
     costcompare = hp.C(A,B,rcompare)
     kcompare = np.array([2.47, 2.34, 2.83])#np.array([2.450709, 1.9927, 3.1678])
     #Update Lambda by simulation
-    lamada = hp.updateLambda(D,sigmacompare,kcompare,miu,NSample)   
+    #lamada = hp.updateLambda(D,sigmacompare,kcompare,miu,NSample)   
     #lamada = 0.876
     sigmaY_Taylorcompare = lamada*sigmaY_Taylorcompare    
     U_compare = hp.U_scrap(costcompare,USY,miuY,sigmaY_Taylorcompare,kcompare,Sp,Sc)   

@@ -10,18 +10,28 @@ import numpy as np
 from scipy.special import erf
 import math
 from scipy.special import factorial
+from scipy.stats import norm 
+import matplotlib.pyplot as plt
+
 
 #n is the order of polimonial function to approximate the error function and its derivative
 n = 70
+THETA = 1/erf(4/erf(2))
 #The design function of clutch
 def Y(x1,x2,x3):
     return math.acos((x1+x2)/(x3-x2))
 
 #SigmaY 
-def sigmaY(sigmaX,D):
-    
-    VY = np.sum(np.multiply(np.power(D,2),np.power(sigmaX,2)))
-    return np.sqrt(VY)
+def sigmaY(sigmaX,D,scenario,k):
+    if scenario == 1 or scenario ==2:
+        VY = np.sum(np.multiply(np.power(D,2),np.power(sigmaX,2)))
+        V = np.sqrt(VY)
+    elif scenario == 3:
+        tem = np.multiply(np.power(D,2),np.power(sigmaX,2))
+        tem2 = np.multiply(tem,np.power(erf(k/np.sqrt(2)),2))
+        VY = np.sum(tem2)
+        V =  THETA*np.sqrt(VY)  #1.0/erf(THETA/np.sqrt(2)) * np.sqrt(VY)
+    return V
 
 #Objective function: Unit cost of a product
 def U_scrap(C,USY,miuY,sigmaYp,k,Sp,Sc):
@@ -93,9 +103,27 @@ def dCi_dri(Bi,ri):
     return -Bi*math.pow(ri,-2)
     
 #dsigmaY/dri
-def dsigmaY_dri(D,sigma,r,i,dsigma_dr):
-    sum = np.sum(np.multiply(np.power(D,2),np.power(sigma,2)))
-    return np.power(sum,-0.5)*(D[i]**2)*sigma[i]*dsigma_dr
+def dsigmaY_dri(D,sigma,r,i,dsigma_dr,scenario,k):
+    if scenario == 1 or scenario == 2:
+        sum = np.sum(np.multiply(np.power(D,2),np.power(sigma,2)))
+        v = np.power(sum,-0.5)*(D[i]**2)*sigma[i]*dsigma_dr
+        
+    if scenario == 3:
+        tem1 = np.multiply(np.power(D,2),np.power(sigma,2))
+        tem2 = np.multiply(tem1, np.power(erf(k/np.sqrt(2)),2))
+        tem3 = np.power(np.sum(tem2),-0.5)
+        #v = 1.0/erf(THETA/np.sqrt(2)) * tem3 *np.power(D[i],2)*np.power(erf(k[i]/np.sqrt(2)),2)*sigma[i]*dsigma_dr
+        v = THETA*tem3 *np.power(D[i],2)*np.power(erf(k[i]/np.sqrt(2)),2)*sigma[i]*dsigma_dr
+    return v
+
+
+def dsigmaY_dki(D,sigma,r,i,k):
+    tem1 = np.multiply(np.power(D,2),np.power(sigma,2))
+    tem2 = np.multiply(tem1, np.power(erf(k/np.sqrt(2)),2))
+    tem3 = np.power(np.sum(tem2),-0.5)
+    #v = 1/(np.sqrt(2) * erf(THETA/np.sqrt(2))) * tem3 *(D[i]**2) * (sigma[i]**2) * erf(k[i]/np.sqrt(2)) * derf_dx(k[i]/np.sqrt(2),n)   
+    v = 1/(np.sqrt(2) * THETA) * tem3 *(D[i]**2) * (sigma[i]**2) * erf(k[i]/np.sqrt(2)) * derf_dx(k[i]/np.sqrt(2),n)  
+    return v 
 
 #dU_dri No scrap
 def dU_dri_noscrap(USY, miuY,sigmaY,C,k,i,dsigmaY_dri,dCi_dri,Sp):
@@ -120,12 +148,20 @@ def dU_dri_scrap(USY, miuY,sigmaYp,C,k,i,lamada,dsigmaY_dri,dCi_dri,Sp,Sc):
     return tem3*tem5 + tem6
 
 #dU_dki
-def dU_dki_scrap(USY, miuY,sigmaYp,ki,Ci,Sci):
-    USp = USY - miuY
+def dU_dki_scrap(USY, miuY,sigmaY,k,i,C,Sc,dsigmaY_dki,Sp):
     sqrt2 = np.sqrt(2)
-    tem1 = USp/(sqrt2*sigmaYp)
-    tem2 = ki/sqrt2
-    return -np.add(Ci,Sci)/sqrt2*derf_dx(tem2,n)/erf(tem1)/np.power(erf(tem2),2)
+    tem1 = (USY - miuY)/(sqrt2*sigmaY)
+    v1 = np.power(erf(tem1),-2)
+    
+    tem2 = np.divide(C+Sc,erf(k/sqrt2)) - Sc
+    tem3 = Sp + np.sum(tem2)
+    v2 = tem1/sigmaY*dsigmaY_dki*derf_dx(tem1,n)*tem3
+    
+    v3 = erf(tem1)*np.power(erf(k[i]/sqrt2),-2)*(Sc[i]+C[i])/sqrt2*derf_dx(k[i]/sqrt2,n)
+
+    
+    dudk = v1*(v2 - v3)
+    return dudk 
     
 #Define some helper functions
 def produce_satisfactory_output(miu, sigma, Q, TOL):
@@ -195,16 +231,104 @@ def simulateSigmaY(D,sigmaX,miuX,NSample):
     return sigmaY_simulation
 
 
+def U_inspect_simulation(NSample,r,A,B,E,F,k,miuX,USY,miuY,Sp,Sc):
+    sigmaX = sigma(E,F,r)
+    tol = np.multiply(sigmaX,k)
+    (X1_satis,N1) = produce_satisfactory_output(miuX[0], sigmaX[0], NSample, tol[0])
+    (X2_satis,N2) = produce_satisfactory_output(miuX[1], sigmaX[1], NSample, tol[1])
+    (X3_satis,N3) = produce_satisfactory_output(miuX[2], sigmaX[2], NSample, tol[2])
+    #Number of components processed
+    N = np.array([N1,N2,N3])
+    #Number of components scrapped
+    Np = NSample - N
+    #Process cost of components
+    Cp = C(A,B,r)
+    X = np.array([X1_satis,X2_satis,X3_satis])
+    Y = assembly(X)
+    Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]
+    #Total cost 
+    Ct = np.sum(np.multiply(N,Cp)) + np.sum(np.multiply(Np,Sc)) + Sp*(NSample-len(Y))
+    U = Ct/len(Y)
+    return U
+    
+def U_noinspect_simulation(NSample,r,A,B,E,F,miuX,USY,miuY,Sp,Sc):
+    sigmaX = sigma(E,F,r)
+    #tol = np.multiply(sigmaX,k)    
+    X1 = np.random.normal(miuX[0], sigmaX[0], NSample)
+    X2 = np.random.normal(miuX[1], sigmaX[1], NSample)
+    X3 = np.random.normal(miuX[2], sigmaX[2], NSample)
+    #Process cost of components
+    Cp = C(A,B,r)
+    X = np.array([X1,X2,X3])
+    Y = assembly(X)
+    Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]    
+    #Total cost 
+    Ct = np.sum(NSample*Cp) + Sp*(NSample-len(Y))
+    U = Ct/len(Y)
+    return U    
+
+def estimateNandM(miuX,E,F,r,k,NSample,USY,miuY,scenario):
+    sigmaX = sigma(E,F,r)
+    if scenario == 1:
+        X1 = np.random.normal(miuX[0], sigmaX[0], NSample)
+        X2 = np.random.normal(miuX[1], sigmaX[1], NSample)
+        X3 = np.random.normal(miuX[2], sigmaX[2], NSample) 
+        N1 = NSample
+        N2 = NSample
+        N3 = NSample        
+    elif scenario == 2 or scenario == 3:
+        tol = np.multiply(sigmaX,k)
+        (X1,N1) = produce_satisfactory_output(miuX[0], sigmaX[0], NSample, tol[0])
+        (X2,N2) = produce_satisfactory_output(miuX[1], sigmaX[1], NSample, tol[1])
+        (X3,N3) = produce_satisfactory_output(miuX[2], sigmaX[2], NSample, tol[2]) 
+    N = [N1,N2,N3]
+    X = np.array([X1,X2,X3])
+    Y = assembly(X)
+    Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]    
+    M = len(Y)
+    return [N,M]
+
+def satisfactionrate_component(Z):
+    px = norm.cdf(Z)
+    gamma = 1-2*(1-px)    
+    return gamma
+
+def satisfactionrate_product(Tol,r,E,F,D,scenario,k):
+    sigmaX = sigma(E,F,r)    
+    sigmaY_Taylor = sigmaY(sigmaX,D,scenario,k)
+    Z = Tol/sigmaY_Taylor  
+    px = norm.cdf(Z)
+    beta = 1-2*(1-px)         
+    return beta
 
 
+def plotsatisfactoryrate(gammas,betas,ratio,k):
+    fig, ax1 = plt.subplots()
+    #plot gamma1
+    ax1.scatter(ratio, gammas[:,0], label="gamma1", color='r' )
+    #plot gamma2   
+    ax1.scatter(ratio, gammas[:,1], label="gamma2", color='g' ) 
+    #plot gamma3
+    ax1.scatter(ratio, gammas[:,2], label="gamma3", color='b' ) 
+    #plot beta
+    ax1.scatter(ratio, betas, label="beta", color='c' ) 
+    ax1.set_ylabel('U') 
+    ax1.set_xlabel('Ratio')
+    
 
-
-
-
-
-
-
-
-
-
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+     
+    ax2.set_ylabel(r'k')  # we already handled the x-label with ax1
+    ax2.scatter(ratio, k[:,0],label="k1", color='m' )
+    ax2.scatter(ratio, k[:,1],label="k2", color='y')
+    ax2.scatter(ratio, k[:,2],label="k3", color='k')
+    ax2.tick_params(axis='y')
+    ax2.legend(loc=3)
+       
+    ax1.legend(loc=1)
+    ax1.grid(True)    
+    plt.show()    
+    fig.savefig(fname='satisfactionrate',dpi=300)
+    fig.savefig('3dPlot.tif')    
+    
         
