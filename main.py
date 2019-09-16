@@ -16,6 +16,7 @@ from scipy.optimize import Bounds
 import nlopt
 from scipy.spatial import distance
 from pandas import DataFrame
+import matplotlib.pyplot as plt
 
 #number of components
 m = 3
@@ -40,7 +41,7 @@ INSPECTFIXK = 2
 INSPECT = 3
 
 
-scenario =  INSPECT
+scenario =  NOINSPECT
 
 p = 0.8
 ##Tolerance from Choi
@@ -54,13 +55,11 @@ CASE = 1
 
 sigmaX_init = np.array([sigmaX_init1, sigmaX_init2, sigmaX_init3])
 
-
-
-A = np.array([0.87, 1.71, 3.54])#np.array([5.0, 3.0, 1.0])
-B = np.array([2.062, 1.276, 1.965]) #np.array([20.0, 36.7, 36.0])
-F = np.array([0.0020, 0.0013, 0.0040])
-E = np.array([0.036,0.0432,0.054]) 
-
+####Hub Roller Cage
+A = np.array([0.88, 0.42, 1.12]) + 0.1 
+B = np.array([2.5, 1.0, 5.0]) #np.array([20.0, 36.7, 36.0])
+E = np.array([0.0232*1.5, 0.0232, 0.0232*2]) *1.2
+F = np.array([0.0020*1.5, 0.0020, 0.0020*2.0])*0.12
 
 #Scrap cost of a product
 Sp = np.sum(A)/10
@@ -124,7 +123,7 @@ def obj_nlopt_inspect(x, grad):
     
     if grad.size > 0:
         grad[:] = grad_combine #Make sure to assign value using [:]
-    #print(U)
+    print(U)
     #print(lamada)
     return U
 
@@ -184,7 +183,7 @@ def optimize(prnt):
         opt = nlopt.opt(nlopt.LD_MMA, 2*m) # MMA (Method of Moving Asymptotes) and CCSA LD_MMA
         lbK = 0.0
         #ubK = 10.0
-        opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,lbK,lbK,lbK])
+        #opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,lbK,lbK,lbK])
         #opt.set_upper_bounds([largevalue,largevalue,largevalue,5,5,5])
         opt.set_min_objective(obj_nlopt_inspect)
         opt.set_xtol_rel(1e-4)
@@ -219,7 +218,7 @@ def optimize(prnt):
     
     elif scenario == INSPECTFIXK:
         opt = nlopt.opt(nlopt.LD_MMA, m) # MMA (Method of Moving Asymptotes) and CCSA LD_MMA
-        opt.set_lower_bounds([smallvalue,smallvalue,smallvalue])
+        #opt.set_lower_bounds([smallvalue,smallvalue,smallvalue])
         #opt.set_upper_bounds([largevalue,largevalue,largevalue,5,5,5])
         opt.set_min_objective(obj_nlopt_inspect_fixk)
         opt.set_xtol_rel(1e-4)
@@ -347,10 +346,44 @@ def comparesatisfactionrate(ratio):
     hp.plotsatisfactoryrate(gammas,betas,ratio,ks)
     
 
+def plotC(A,B,r):
+    fig, ax1 = plt.subplots()
+    ax1.scatter(r, hp.C(A[0],B[0],r), s=4, label="Hub", color='r' )
+    ax1.scatter(r, hp.C(A[1],B[1],r), s=4, label="Roller", color='g' )
+    ax1.scatter(r, hp.C(A[2],B[2],r), s=4, label="Cage", color='b' )
+    #ax1.scatter(krange, np.tanh(krange), s=0.1, label="tanh", color='y' )
+    ax1.set_ylabel('C') 
+    ax1.set_xlabel('r')
+    ax1.legend()
+    ax1.grid(True)
+    plt.show()     
+    fig.savefig(fname='cost',dpi=300)
+    #fig.savefig('3dPlot.tif')
+
+def plotsigma(E,F,r):
+    F = np.array([0.0020, 0.0013, 0.001050]) 
+    E = np.array([0.036,0.0432,0.014]) 
+    fig, ax1 = plt.subplots()
+    ax1.scatter(r, hp.sigma(E[0],F[0],r), s=4, label="Hub", color='r' )
+    ax1.scatter(r, hp.sigma(E[1],F[1],r), s=4, label="Roller", color='g' )
+    ax1.scatter(r, hp.sigma(E[2],F[2],r), s=4, label="Cage", color='b' )
+    #ax1.scatter(krange, np.tanh(krange), s=0.1, label="tanh", color='y' )
+    ax1.set_ylabel('Sigma') 
+    ax1.set_xlabel('r')
+    ax1.legend()
+    ax1.grid(True)
+    plt.show()     
+    fig.savefig(fname='sigma',dpi=300)    
     
-
-
 ##This Method
+    
+#plotC(A,B,np.arange(1,10,0.1))
+
+#plotsigma(E,F,np.arange(1,10,0.1))
+
+
+
+
 result = optimize(True)
 U_equation = result['U']
 r_opt = result['r']
@@ -366,15 +399,21 @@ print('U Simulation: ', U_simulation)
 beta = hp.satisfactionrate_product(USY - miuY,r_opt,E,F,D,scenario,k_opt)
 print('beta: ', beta)
 print('sigmaY: ', hp.sigmaY(sigma_opt,D,scenario,k_opt))
+print('opt cost:', hp.C(A,B,r_opt))
+print('N: ',N)
+print('M: ', M)
+print('Gama', hp.satisfactionrate_component(k_opt))
+
 ##CIRP Method
-#rp = np.array([5.20,3.60,3.40])
-#kp = np.array([2.47,2.34,2.93])
-#[Np,Mp]=hp.estimateNandM(miu,E,F,rp,kp,NSample,USY,miuY,1)
-#Up = hp.U_inspect_simulation(NSample,rp,A,B,E,F,kp,miu,USY,miuY,Sp,Sc)   
-##Compare k=3
-#kfix=np.array([3,3,3])
-#[Nfix,Mfix]=hp.estimateNandM(miu,E,F,r_opt,kfix,NSample,USY,miuY,1)
-#Ufix = hp.U_inspect_simulation(NSample,r_opt,A,B,E,F,kfix,miu,USY,miuY,Sp,Sc)
+sigmap = np.array([0.2753,0.1135,0.377])/3
+rp = hp.sigmator(sigmap,E,F)
+kp = np.array([3,3,3])
+[Np,Mp]=hp.estimateNandM(miu,E,F,rp,kp,NSample,USY,miuY,scenario)
+Up = hp.U_inspect_simulation(NSample,rp,A,B,E,F,kp,miu,USY,miuY,Sp,Sc)   
+print('CIRP U: ', Up)
+print('CIRP N ', Np)
+print('CIRP M ', Mp)
+
 
 
  

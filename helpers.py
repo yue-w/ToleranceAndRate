@@ -19,8 +19,25 @@ n = 70
 THETA = 1/erf(4/erf(2))
 #The design function of clutch
 def Y(x1,x2,x3):
+    
     return math.acos((x1+x2)/(x3-x2))
 
+a = 2.26
+c = 1.09
+b = 1 + 1/np.exp(a*c)
+d = -1/np.exp(a*c)
+
+def h(x,a,b,c,d):
+    #return np.divide(2*np.ones_like(x),1+np.exp(-1*a*x)) - 1  
+    return np.divide(b*np.ones_like(x),1+np.exp(-a*(x-c)))+d
+
+def dh_dx(x,a,b,c,d):
+    #tem = np.exp(-1*a*x)
+    #v = np.divide(2*a*tem,np.power(1+tem,2))
+    tem = np.exp(-1*a*x+a*c)
+    return b*a*np.multiply(np.power(1+tem,-2),tem)
+    
+  
 #SigmaY 
 def sigmaY(sigmaX,D,scenario,k):
     if scenario == 1 or scenario ==2:
@@ -28,9 +45,9 @@ def sigmaY(sigmaX,D,scenario,k):
         V = np.sqrt(VY)
     elif scenario == 3:
         tem = np.multiply(np.power(D,2),np.power(sigmaX,2))
-        tem2 = np.multiply(tem,np.power(erf(k/np.sqrt(2)),2))
+        tem2 = np.multiply(tem,np.power(h(k,a,b,c,d),2))
         VY = np.sum(tem2)
-        V =  THETA*np.sqrt(VY)  #1.0/erf(THETA/np.sqrt(2)) * np.sqrt(VY)
+        V =  np.sqrt(VY)  #1.0/erf(THETA/np.sqrt(2)) * np.sqrt(VY)
     return V
 
 #Objective function: Unit cost of a product
@@ -109,20 +126,21 @@ def dsigmaY_dri(D,sigma,r,i,dsigma_dr,scenario,k):
         v = np.power(sum,-0.5)*(D[i]**2)*sigma[i]*dsigma_dr
         
     if scenario == 3:
+        hk = h(k,a,b,c,d)
         tem1 = np.multiply(np.power(D,2),np.power(sigma,2))
-        tem2 = np.multiply(tem1, np.power(erf(k/np.sqrt(2)),2))
+        tem2 = np.multiply(tem1, np.power(hk,2))
         tem3 = np.power(np.sum(tem2),-0.5)
-        #v = 1.0/erf(THETA/np.sqrt(2)) * tem3 *np.power(D[i],2)*np.power(erf(k[i]/np.sqrt(2)),2)*sigma[i]*dsigma_dr
-        v = THETA*tem3 *np.power(D[i],2)*np.power(erf(k[i]/np.sqrt(2)),2)*sigma[i]*dsigma_dr
+        v = tem3*np.power(D[i],2)*np.power(hk[i],2)*sigma[i]*dsigma_dr
+        
     return v
 
 
 def dsigmaY_dki(D,sigma,r,i,k):
     tem1 = np.multiply(np.power(D,2),np.power(sigma,2))
-    tem2 = np.multiply(tem1, np.power(erf(k/np.sqrt(2)),2))
-    tem3 = np.power(np.sum(tem2),-0.5)
-    #v = 1/(np.sqrt(2) * erf(THETA/np.sqrt(2))) * tem3 *(D[i]**2) * (sigma[i]**2) * erf(k[i]/np.sqrt(2)) * derf_dx(k[i]/np.sqrt(2),n)   
-    v = 1/(np.sqrt(2) * THETA) * tem3 *(D[i]**2) * (sigma[i]**2) * erf(k[i]/np.sqrt(2)) * derf_dx(k[i]/np.sqrt(2),n)  
+    hk = h(k,a,b,c,d)
+    tem2 = np.multiply(tem1, np.power(hk,2))
+    tem3 = np.power(np.sum(tem2),-0.5)  
+    v = tem3*np.power(D[i],2)*np.power(sigma[i],2)*hk[i]*dh_dx(k[i],a,b,c,d)
     return v 
 
 #dU_dri No scrap
