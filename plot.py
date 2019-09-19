@@ -20,7 +20,7 @@ beta_prt3 = df['part3']
 #print(nonins_U)
 #print(ins_U)
 
-ratio = np.linspace(0.5,4,16)
+ratio = np.linspace(0.5,1.8,20)
 
 
 fig, ax1 = plt.subplots()
@@ -33,9 +33,9 @@ ax1.set_xlabel('Ratio')
 ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
 ax2.set_ylabel(r'limit of $\gamma$')  # we already handled the x-label with ax1
-ax2.scatter(ratio, beta_prt1)
-ax2.scatter(ratio, beta_prt2)
-ax2.scatter(ratio, beta_prt3)
+#ax2.scatter(ratio, beta_prt1)
+#ax2.scatter(ratio, beta_prt2)
+#ax2.scatter(ratio, beta_prt3)
 ax2.tick_params(axis='y')
 
 

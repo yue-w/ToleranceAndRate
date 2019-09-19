@@ -12,6 +12,7 @@ import math
 from scipy.special import factorial
 from scipy.stats import norm 
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 #n is the order of polimonial function to approximate the error function and its derivative
@@ -154,12 +155,12 @@ def dU_dri_noscrap(USY, miuY,sigmaY,C,k,i,dsigmaY_dri,dCi_dri,Sp):
     return tem3*tem4 + tem5
 
 #dU_dri Scrap
-def dU_dri_scrap(USY, miuY,sigmaYp,C,k,i,lamada,dsigmaY_dri,dCi_dri,Sp,Sc):
+def dU_dri_scrap(USY, miuY,sigmaYp,C,k,i,dsigmaY_dri,dCi_dri,Sp,Sc):
     USp = USY - miuY
     sqrt2 = np.sqrt(2)
     tem1 = USp/(sqrt2*sigmaYp)
     tem2 = tem1/sigmaYp
-    tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1,n)*tem2*dsigmaY_dri*lamada
+    tem3 = math.pow(erf(tem1),-2)*derf_dx(tem1,n)*tem2*dsigmaY_dri
     tem4 = np.sum(np.multiply((np.divide(1,erf(k/sqrt2))-1),Sc))
     tem5 = np.sum(np.divide(C,erf(k/sqrt2))) + tem4 + Sp
     tem6 = dCi_dri/(erf(tem1)*erf(k[i]/sqrt2))
@@ -219,22 +220,6 @@ def sigmator(sigma,E,F):
     r = np.sqrt(np.divide(np.subtract(sigma,E),F))
     return r
 
-def updateLambda(D,sigmaX,k,miuX,NSample):
-    tol = np.multiply(sigmaX,k)
-    sigmaY_equation = sigmaY(sigmaX,D)
-    
-    #Sigma estimated by simulation - with scrap
-    (X1_satis,N1) = produce_satisfactory_output(miuX[0], sigmaX[0], NSample, tol[0])
-    (X2_satis,N2) = produce_satisfactory_output(miuX[1], sigmaX[1], NSample, tol[1])
-    (X3_satis,N3) = produce_satisfactory_output(miuX[2], sigmaX[2], NSample, tol[2])
-    X = np.array([X1_satis,X2_satis,X3_satis])
-    products_simulation_satis = assembly(X)
-    sigmaY_simulation_satis = np.std(products_simulation_satis)
-    
-    
-    lamada =  sigmaY_simulation_satis/sigmaY_equation    
-    
-    return lamada
 
 def simulateSigmaY(D,sigmaX,miuX,NSample):
    #Estimate sigmaY by simulation instead of equation. 
@@ -258,14 +243,14 @@ def U_inspect_simulation(NSample,r,A,B,E,F,k,miuX,USY,miuY,Sp,Sc):
     #Number of components processed
     N = np.array([N1,N2,N3])
     #Number of components scrapped
-    Np = NSample - N
+    Np = np.abs(N - NSample)
     #Process cost of components
     Cp = C(A,B,r)
     X = np.array([X1_satis,X2_satis,X3_satis])
     Y = assembly(X)
     Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]
     #Total cost 
-    Ct = np.sum(np.multiply(N,Cp)) + np.sum(np.multiply(Np,Sc)) + Sp*(NSample-len(Y))
+    Ct = np.sum(np.multiply(N,Cp)) + np.sum(np.multiply(Np,Sc)) + Sp*(np.abs(NSample-len(Y)))
     U = Ct/len(Y)
     return U
     
@@ -299,7 +284,7 @@ def estimateNandM(miuX,E,F,r,k,NSample,USY,miuY,scenario):
         (X1,N1) = produce_satisfactory_output(miuX[0], sigmaX[0], NSample, tol[0])
         (X2,N2) = produce_satisfactory_output(miuX[1], sigmaX[1], NSample, tol[1])
         (X3,N3) = produce_satisfactory_output(miuX[2], sigmaX[2], NSample, tol[2]) 
-    N = [N1,N2,N3]
+    N = np.array([N1,N2,N3])
     X = np.array([X1,X2,X3])
     Y = assembly(X)
     Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]    
@@ -311,16 +296,18 @@ def satisfactionrate_component(Z):
     gamma = 1-2*(1-px)    
     return gamma
 
-def satisfactionrate_product(Tol,r,E,F,D,scenario,k):
-    sigmaX = sigma(E,F,r)    
-    sigmaY_Taylor = sigmaY(sigmaX,D,scenario,k)
-    Z = Tol/sigmaY_Taylor  
-    px = norm.cdf(Z)
-    beta = 1-2*(1-px)         
-    return beta
+def satisfactionrate_component_product(miuX,E,F,r,k,NSample,USY,miuY,scenario):
+    ##Use simulation to calculate beta     
+    [N,M] = estimateNandM(miuX,E,F,r,k,NSample,USY,miuY,scenario)
+    gamma = NSample/N*100
+    beta = M/NSample*100
+    satisfactionrate = {}
+    satisfactionrate['gammas'] = gamma
+    satisfactionrate['beta'] = beta
+    return satisfactionrate
 
 
-def plotsatisfactoryrate(gammas,betas,ratio,k):
+def plotsatisfactoryrateandk(gammas,betas,ratio,kopt):
     fig, ax1 = plt.subplots()
     #plot gamma1
     ax1.scatter(ratio, gammas[:,0], label="gamma1", color='r' )
@@ -329,24 +316,60 @@ def plotsatisfactoryrate(gammas,betas,ratio,k):
     #plot gamma3
     ax1.scatter(ratio, gammas[:,2], label="gamma3", color='b' ) 
     #plot beta
-    ax1.scatter(ratio, betas, label="beta", color='c' ) 
-    ax1.set_ylabel('U') 
+    ax1.scatter(ratio, betas, label="beta", color='c', marker='*' ) 
+    ax1.set_ylabel('Satisfaction rate') 
     ax1.set_xlabel('Ratio')
     
 
     ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
      
     ax2.set_ylabel(r'k')  # we already handled the x-label with ax1
-    ax2.scatter(ratio, k[:,0],label="k1", color='m' )
-    ax2.scatter(ratio, k[:,1],label="k2", color='y')
-    ax2.scatter(ratio, k[:,2],label="k3", color='k')
+    ax2.scatter(ratio, kopt[:,0],label="k1", color='m', marker='+' )
+    ax2.scatter(ratio, kopt[:,1],label="k2", color='y', marker='+')
+    ax2.scatter(ratio, kopt[:,2],label="k3", color='k', marker='+')
     ax2.tick_params(axis='y')
-    ax2.legend(loc=3)
+    ax2.legend(loc=1)
        
-    ax1.legend(loc=1)
+    ax1.legend(loc=3)
     ax1.grid(True)    
     plt.show()    
     fig.savefig(fname='satisfactionrate',dpi=300)
     fig.savefig('3dPlot.tif')    
+    
+def scatterplot(x,y,xlabel,ylabel,save=False,filename='scatterplot'):
+    fig, ax1 = plt.subplots()
+    ax1.scatter(x, y, s=4, color='r' )
+    #ax1.scatter(krange, np.tanh(krange), s=0.1, label="tanh", color='y' )
+    ax1.set_ylabel(ylabel) 
+    ax1.set_xlabel(xlabel)
+    #ax1.legend()
+    ax1.grid(True)
+    plt.show()     
+    fig.savefig(fname='cost',dpi=300)    
+    
+def plotU(xaxis):
+    df=pd.read_excel("U.xlsx",sheet_name='sheet1')
+    nonins_Up = df['noinspect_U']
+    ins_Up = df['inspect_U_fixk']
+    inspect_Up = df['inspect_U']
+    
+    fig, ax1 = plt.subplots()
+    ax1.scatter(xaxis, nonins_Up, label="No inspect", color='r' )
+    ax1.scatter(xaxis, ins_Up, label="k=3", color='b' )
+    ax1.scatter(xaxis, inspect_Up, label="k opt", color='g' )
+    ax1.set_ylabel('U') 
+    
+    ax1.set_xlabel('Ratio')
+    
+    ax1.legend()
+    ax1.grid(True)
+    
+    plt.show()
+    
+    fig.savefig(fname='U_Scenarios',dpi=300)
+    #fig.savefig('3dPlot.tif')    
+    
+
+    
     
         

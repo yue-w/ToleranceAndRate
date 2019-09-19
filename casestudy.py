@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+9# -*- coding: utf-8 -*-
 """
 Created on Mon Sep  2 10:55:01 2019
 
@@ -9,8 +9,8 @@ from pandas import DataFrame
 import numpy as np
 from scipy.stats import norm 
 
-E = np.array([0.036,0.0432,0.054]) 
-ratio = np.linspace(0.5,4,16)
+E = np.array([0.036,0.0432,0.054]) * 1.0 
+ratio = np.linspace(0.5,1.8,20)
 
 tols = np.array([0.237, 0.171, 0.297])
 

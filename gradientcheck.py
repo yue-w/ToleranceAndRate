@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+8# -*- coding: utf-8 -*-
 """
 Created on Sun Mar 17 15:54:11 2019
 Check the gradient of ri and ki bomputed by equation and by numerical method
@@ -77,11 +77,6 @@ USY = miuY + np.radians(2.0)
 
 #U = hp.U_scrap(C,USY,sigmaY,k)
 
-lamada = 1
-
-
-
-
 grad_numerical_r = np.zeros(m)
 grad_equation_r = np.zeros(m)
 grad_numerical_k = np.zeros(m)
@@ -121,7 +116,7 @@ for i in range(0,m):
         dCi_dri_v = hp.dCi_dri(B[i],r[i])
         dsigmai_dri_v = hp.dsigmai_dri(F[i],r[i])
         dsigmaY_dri_v = hp.dsigmaY_dri(D,sigmaX,r,i,dsigmai_dri_v,scenario,k)
-        grad_equation_r[i] = hp.dU_dri_scrap(USY,miuY,sigmaY_Taylor,C,k,i,lamada,dsigmaY_dri_v,dCi_dri_v,Sp,Sc)
+        grad_equation_r[i] = hp.dU_dri_scrap(USY,miuY,sigmaY_Taylor,C,k,i,dsigmaY_dri_v,dCi_dri_v,Sp,Sc)
         print('Equation_scrap_'+'dr'+str(i),'=',grad_equation_r[i])
    
     elif scenario == 3: #Scrap and optimize k
@@ -134,7 +129,7 @@ for i in range(0,m):
         dCi_dri_v = hp.dCi_dri(B[i],r[i])
         dsigmai_dri_v = hp.dsigmai_dri(F[i],r[i])
         dsigmaY_dri_v = hp.dsigmaY_dri(D,sigmaX,r,i,dsigmai_dri_v,scenario,k)
-        grad_equation_r[i] = hp.dU_dri_scrap(USY,miuY,sigmaY_Taylor,C,k,i,lamada,dsigmaY_dri_v,dCi_dri_v,Sp,Sc)        
+        grad_equation_r[i] = hp.dU_dri_scrap(USY,miuY,sigmaY_Taylor,C,k,i,dsigmaY_dri_v,dCi_dri_v,Sp,Sc)        
         print('Equation_scrap_'+'dr'+str(i),'=',grad_equation_r[i])
         
         ##varify dk        
