@@ -8,7 +8,4 @@
 # from pandas import DataFrame
 # =============================================================================
 
-import pandas as pd
 
-df=pd.read_excel("Test.xlsx",sheet_name='sheet1')
-print(df['noinspect_U'][0])

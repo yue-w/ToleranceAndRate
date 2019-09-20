@@ -40,7 +40,7 @@ INSPECTFIXK = 2
 INSPECT = 3
 
 
-scenario =  INSPECTFIXK
+scenario =  INSPECT
 
 
 ####Hub Roller Cage
@@ -175,7 +175,7 @@ def optimize(prnt,para):
     if scenario == INSPECT: #Scrap
         opt = nlopt.opt(nlopt.LD_MMA, 2*m) # MMA (Method of Moving Asymptotes) and CCSA LD_MMA
         #ubK = 10.0
-        #opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,lbK,lbK,lbK])
+        opt.set_lower_bounds([smallvalue,smallvalue,smallvalue,smallvalue,smallvalue,smallvalue])
         #opt.set_upper_bounds([largevalue,largevalue,largevalue,5,5,5])
         opt.set_min_objective(lambda x,grad: obj_nlopt_inspect(x,grad,para))
         #opt.set_min_objective(obj_nlopt_inspect)
@@ -211,7 +211,7 @@ def optimize(prnt,para):
     
     elif scenario == INSPECTFIXK:
         opt = nlopt.opt(nlopt.LD_MMA, m) # MMA (Method of Moving Asymptotes) and CCSA LD_MMA
-        #opt.set_lower_bounds([smallvalue,smallvalue,smallvalue])
+        opt.set_lower_bounds([smallvalue,smallvalue,smallvalue])
         #opt.set_upper_bounds([largevalue,largevalue,largevalue,5,5,5])
         opt.set_min_objective(lambda x,grad: obj_nlopt_inspect_fixk(x,grad,para))
         opt.set_xtol_rel(1e-4)
@@ -277,7 +277,7 @@ def comparetwoscenarios(ratio):
         #Average the results
         U = 0
         Up = 0
-        aveN = 5
+        aveN = 10
         for i in range(aveN):
             result = optimize(False,para)
             U += result['U']
@@ -434,18 +434,18 @@ def CIRP():
 #plotC(A,B,np.arange(1,10,0.1))
 #plotsigma(E,F,np.arange(1,10,0.1))
     
-casestudy_U()
-CIRP()
+#casestudy_U()
+#CIRP()
 
-ratio = np.linspace(0.5,2.0,15)
-error = computeerror(scenario,ratio)
-print(error)
-hp.scatterplot(ratio,error,'ratio','error%',save=False,filename='scatterplot') 
+#ratio = np.linspace(0.5,2.0,15)
+#error = computeerror(scenario,ratio)
+#print(error)
+#hp.scatterplot(ratio,error,'ratio','error%',save=False,filename='errorplot') 
 
-#ratio = np.linspace(1,2,10)
-#resultlist = comparetwoscenarios(ratio)   
-#writetofile_U(resultlist)  
-#hp.plotU(ratio)
+ratio = np.linspace(0.5,3,15)
+resultlist = comparetwoscenarios(ratio)   
+writetofile_U(resultlist)  
+hp.plotU(ratio)
 print('done')
 
 #comparesatisfactionrateandk(ratio,scenario)

@@ -28,15 +28,45 @@ c = 1.09
 b = 1 + 1/np.exp(a*c)
 d = -1/np.exp(a*c)
 
-def h(x,a,b,c,d):
-    #return np.divide(2*np.ones_like(x),1+np.exp(-1*a*x)) - 1  
-    return np.divide(b*np.ones_like(x),1+np.exp(-a*(x-c)))+d
+def W(k):
+  #return np.divide(1,1-2*norm.cdf(-k))
+  return np.divide(1,erf(k/np.sqrt(2)))
 
-def dh_dx(x,a,b,c,d):
-    #tem = np.exp(-1*a*x)
-    #v = np.divide(2*a*tem,np.power(1+tem,2))
-    tem = np.exp(-1*a*x+a*c)
+def phi(k):
+  return np.divide(np.exp(-np.power(k,2)/2),np.sqrt(2*np.pi))
+
+def h(k,a,b,c,d):
+    '''
+    ##This is the fitting method
+    return np.divide(b*np.ones_like(k),1+np.exp(-a*(k-c)))+d
+    '''
+    
+    
+    ##Method from SPC book
+    return np.sqrt(1+2*W(k)*(-k)*phi(-k))
+    
+
+
+def dh_dx(k,a,b,c,d):
+    '''
+    ##This is the fitting method
+    tem = np.exp(-1*a*k+a*c)
     return b*a*np.multiply(np.power(1+tem,-2),tem)
+    '''
+    
+    
+    ## Method from SPC book
+    phik = phi(-k)
+    erfkoversqr2 = erf(np.divide(k,np.sqrt(2)))
+    tm1 = np.multiply(2*k,phik)
+    term1 = -np.power(1-np.divide(tm1,erfkoversqr2),-0.5)
+    
+    tm2 = np.multiply(erfkoversqr2 , np.multiply(phik,1-np.power(k,2)))
+    tm3 = -np.multiply(np.multiply(np.divide(k,np.sqrt(2)),phik), derf_dx(np.divide(k,np.sqrt(2)),n))       
+    term2 = np.divide(tm2+tm3,np.power(erfkoversqr2,2))
+    
+    return term1*term2
+    
     
   
 #SigmaY 
@@ -88,7 +118,6 @@ def sigma(E,F,r):
     return np.add(E,np.multiply(F,np.power(r,2)))
 
 #Approximat the deriative of an error function. The error function is approximated
-#by a 7th order power series expansion for the error function
 def derf_dx(x,n):
     #return (1.0-x**2+x**4/2.0-x**6/6.0)*2.0/math.sqrt(math.pi)
     val = 0
@@ -246,6 +275,9 @@ def U_inspect_simulation(NSample,r,A,B,E,F,k,miuX,USY,miuY,Sp,Sc):
     Np = np.abs(N - NSample)
     #Process cost of components
     Cp = C(A,B,r)
+    np.random.shuffle(X1_satis)
+    np.random.shuffle(X2_satis)
+    np.random.shuffle(X3_satis)
     X = np.array([X1_satis,X2_satis,X3_satis])
     Y = assembly(X)
     Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]
@@ -262,11 +294,14 @@ def U_noinspect_simulation(NSample,r,A,B,E,F,miuX,USY,miuY,Sp,Sc):
     X3 = np.random.normal(miuX[2], sigmaX[2], NSample)
     #Process cost of components
     Cp = C(A,B,r)
+    np.random.shuffle(X1)
+    np.random.shuffle(X2)
+    np.random.shuffle(X3)    
     X = np.array([X1,X2,X3])
     Y = assembly(X)
     Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]    
     #Total cost 
-    Ct = np.sum(NSample*Cp) + Sp*(NSample-len(Y))
+    Ct = np.sum(np.multiply(NSample,Cp)) + Sp*(np.abs(NSample-len(Y)))
     U = Ct/len(Y)
     return U    
 
@@ -285,6 +320,9 @@ def estimateNandM(miuX,E,F,r,k,NSample,USY,miuY,scenario):
         (X2,N2) = produce_satisfactory_output(miuX[1], sigmaX[1], NSample, tol[1])
         (X3,N3) = produce_satisfactory_output(miuX[2], sigmaX[2], NSample, tol[2]) 
     N = np.array([N1,N2,N3])
+    np.random.shuffle(X1)
+    np.random.shuffle(X2)
+    np.random.shuffle(X3)
     X = np.array([X1,X2,X3])
     Y = assembly(X)
     Y = Y[np.logical_and(Y>=2*miuY-USY,Y<=USY)]    
@@ -334,7 +372,7 @@ def plotsatisfactoryrateandk(gammas,betas,ratio,kopt):
     ax1.grid(True)    
     plt.show()    
     fig.savefig(fname='satisfactionrate',dpi=300)
-    fig.savefig('3dPlot.tif')    
+    #fig.savefig('3dPlot.tif')    
     
 def scatterplot(x,y,xlabel,ylabel,save=False,filename='scatterplot'):
     fig, ax1 = plt.subplots()
@@ -345,13 +383,13 @@ def scatterplot(x,y,xlabel,ylabel,save=False,filename='scatterplot'):
     #ax1.legend()
     ax1.grid(True)
     plt.show()     
-    fig.savefig(fname='cost',dpi=300)    
+    fig.savefig(fname=filename,dpi=300)    
     
 def plotU(xaxis):
     df=pd.read_excel("U.xlsx",sheet_name='sheet1')
-    nonins_Up = df['noinspect_U']
-    ins_Up = df['inspect_U_fixk']
-    inspect_Up = df['inspect_U']
+    nonins_Up = df['noinspect_Up']
+    ins_Up = df['inspect_Up_fixk']
+    inspect_Up = df['inspect_Up']
     
     fig, ax1 = plt.subplots()
     ax1.scatter(xaxis, nonins_Up, label="No inspect", color='r' )
